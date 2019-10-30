@@ -22,14 +22,29 @@ SetPixelFormat          equ  0x19CADE93
 wglCreateContext        equ  0xF2BF3662
 wglMakeCurrent          equ  0x7DFD750F
 wglSwapLayerBuffers     equ  0xD765358D
+wglGetProcAddress       equ  0x255E1FB7
+glRects                 equ  0x458B2E59
+GetProcessHeap          equ  0x100E6A8D
+HeapAlloc               equ  0x50B06755
 
-%define  opengl32base   ebp-4
-%define  kernel32base   ebp-8
-%define  user32base     ebp-12
-%define  hWnd           ebp-16
-%define  hDC            ebp-20
-%define  gdi32base      ebp-24
-STACK_LOCALS_SIZE  equ  24
+%define  opengl32base             ebp-4
+%define  kernel32base             ebp-8
+%define  user32base               ebp-12
+%define  gdi32base                ebp-16
+%define  hWnd                     ebp-20
+%define  hDC                      ebp-24
+%define  oglCreateShaderProgramv  ebp-28
+%define  oglGenProgramPipelines   ebp-32
+%define  oglBindProgramPipeline   ebp-36
+%define  oglUseProgramStages      ebp-40
+%define  oglProgramUniform1f      ebp-44
+%define  vertShader               ebp-48
+%define  fragShader               ebp-52
+%define  shaderProgram            ebp-56
+%define  hHeap                    ebp-60
+%define  vertAlloc                ebp-64
+
+STACK_LOCALS_SIZE  equ  64
 
 XRES  equ  1280
 YRES  equ   720
@@ -53,7 +68,7 @@ pe_hdr:
 dw_zero:
         dw 0                          ; no sections
 
-N_user32:
+str_user32:
         db "user32.dll",0,0           ; 12 bytes of data collapsed into the header
       ; dd 0                          ; [UNUSED-12] timestamp
       ; dd 0                          ; [UNUSED] symbol table pointer
@@ -80,7 +95,7 @@ main_part_1:
 
 ; another 5 bytes of code + 2 bytes of jump
 main_part_2:  
-        sub esp, STACK_LOCALS_SIZE    ; save 12 bytes on the stack for local var
+        sub esp, STACK_LOCALS_SIZE    ; save on the stack for local var
         mov eax, [eax]                ; go to where ntdll.dll typically is
         jmp main_part_3
 
@@ -167,37 +182,28 @@ main_part_4:
     ; user32base = LoadLibraryA( "user32.dll" );
         ; assume ebx = [kernel32base]
         mov esi, LoadLibraryA
-        push N_user32
+        push str_user32
         call call_import
         mov [user32base], eax
 
     ; opengl32base = LoadLibraryA( "opengl32.dll" );
         mov esi, LoadLibraryA
-        push N_opengl32
+        push str_opengl32
         call call_import
         mov [opengl32base], eax
 
     ; gdi32base = LoadLibraryA( "gdi32.dll" );
         mov esi, LoadLibraryA
-        push N_gdi32
+        push str_gdi32
         call call_import
         mov [gdi32base], eax
 
-    ; MessageBoxA( NULL, message, "", 0 );
-        push 0
-        push dw_zero
-        push message
-        push 0
-        mov ebx, [user32base]
-        mov esi, MessageBoxA
-        call call_import
-
     ; ChangeDisplaySettingsA( &screenSettings, CDS_FULLSCREEN );
-    ;   push 4
-    ;   push displaySettings
-    ;   mov ebx, [user32base]
-    ;   mov esi, ChangeDisplaySettingsA
-    ;   call call_import
+        push 4
+        push displaySettings
+        mov ebx, [user32base]
+        mov esi, ChangeDisplaySettingsA
+        call call_import
 
     ; ShowCursor( 0 );
         push 0
@@ -262,18 +268,98 @@ main_part_4:
         or eax, eax
         jz error
 
+    ; oglFUNCTION = wglGetProcAddress( str_glFUNCTION )
+        ; assume ebx = [opengl32base]
+
+        push str_glCreateShaderProgramv
+        mov ebx, [opengl32base]
+        mov esi, wglGetProcAddress
+        call call_import
+        mov [oglCreateShaderProgramv], eax
+
+        push str_glGenProgramPipelines
+        call call_import
+        mov [oglGenProgramPipelines], eax
+        push str_glBindProgramPipeline
+        call call_import
+        mov [oglBindProgramPipeline], eax
+        push str_glUseProgramStages
+        call call_import
+        mov [oglUseProgramStages], eax
+        push str_glProgramUniform1f
+        call call_import
+        mov [oglProgramUniform1f], eax
+
+    ; vertShader = oglCreateShaderProgramv( GL_VERTEX_SHADER, 1, str_vertexShader )
+        mov dword [vertShader], str_vertexShader
+        mov eax, ebp
+        sub eax, 48
+        push eax
+        push 1
+        push 0x8B31
+        call [oglCreateShaderProgramv]
+        mov [vertShader], eax
+        test eax, eax
+        jz error
+
+    ; fragShader = oglCreateShaderProgramv( GL_FRAGMENT_SHADER, 1, str_fragmentShader )
+        mov dword [fragShader], str_fragmentShader
+        mov eax, ebp
+        sub eax, 52
+        push eax
+        push 1
+        push 0x8B30
+        call [oglCreateShaderProgramv]
+        mov [fragShader], eax
+        test eax, eax
+        jz error
+
+    ; oglGenProgramPipelines( 1, &shaderProgram );
+        lea eax, [shaderProgram]
+        push eax
+        push 1
+        call [oglGenProgramPipelines]
+
+    ; oglBindProgramPipeline( shaderProgram );
+        push dword [shaderProgram]
+        call [oglBindProgramPipeline]
+
+    ; oglUseProgramStages( shaderProgram, GL_VERTEX_SHADER_BIT (1), vertShader );
+        mov eax, [vertShader]
+        push eax
+        push 1
+        mov eax, [shaderProgram]
+        push eax
+        call [oglUseProgramStages]
+
+    ; oglUseProgramStages( shaderProgram, GL_FRAGMENT_SHADER_BIT (2), fragShader );
+        mov eax, [fragShader]
+        push eax
+        push 2
+        mov eax, [shaderProgram]
+        push eax
+        call [oglUseProgramStages]
+
+    ; glRects( -1, -1, 1, 1 );
+        push 1
+        push 1
+        push -1
+        push -1
+        mov ebx, [opengl32base]
+        mov esi, glRects
+        call call_import
+
     ; wglSwapLayerBuffers( hDC, WGL_SWAP_MAIN_PLANE );
         push 1
-        mov ecx, [hDC]
-        push ecx
+        push dword [hDC]
         mov ebx, [opengl32base]
         mov esi, wglSwapLayerBuffers
         call call_import
         or eax, eax
         jz error
 
-    ; Sleep( 2000 );
-        push 2000
+    ; Sleep( 5000 );
+        push 5000
         mov ebx, [kernel32base]
         mov esi, Sleep
         call call_import
@@ -286,10 +372,10 @@ exit:
         call call_import
 
 error:
-    ; MessageBoxA( NULL, message, "", 0 );
+    ; MessageBoxA( NULL, str_errorMessage, "", 0 );
         push 0
         push dw_zero
-        push errorMessage
+        push str_errorMessage
         push 0
         mov ebx, [user32base]
         mov esi, MessageBoxA
@@ -298,16 +384,19 @@ error:
 
 ;=====  Data section  =============================================================================
 
-message:
-        db "Hello world", 0
+str_errorMessage:            db "Error!", 0
+str_opengl32:                db "opengl32.dll", 0
+str_gdi32:                   db "gdi32.dll", 0
+str_glCreateShaderProgramv:  db "glCreateShaderProgramv", 0
+str_glGenProgramPipelines:   db "glGenProgramPipelines", 0
+str_glBindProgramPipeline:   db "glBindProgramPipeline", 0
+str_glUseProgramStages:      db "glUseProgramStages", 0
+str_glProgramUniform1f:      db "glProgramUniform1f", 0
 
-errorMessage:
-        db "Error!", 0
-
-N_opengl32:
-        db "opengl32.dll", 0
-N_gdi32:
-        db "gdi32.dll", 0
+str_vertexShader:
+        db "#version 430",10,"layout(location=0)in vec2 g;out gl_PerVertex{vec4 gl_Position;};void main(){gl_Position=vec4(g,0.,1.);}",0
+str_fragmentShader:
+        db "#version 430",10,"layout(location=0)uniform float q;layout(location=0)out vec4 n;void main(){vec2 v=gl_FragCoord.xy/vec2(720)-vec2(.888889,.5);float l=length(v);n=1.-vec4(l+.5+.2*sin(10.*v.x),l+.5+.02*sin(1.*v.y),l+sin(50.*l),0.);}", 0
 
 displaySettings:
         dd 0                ; BYTE dmDeviceName[32];
