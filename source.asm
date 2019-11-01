@@ -26,6 +26,7 @@ wglGetProcAddress       equ  0x255E1FB7
 glRects                 equ  0x458B2E59
 GetProcessHeap          equ  0x100E6A8D
 HeapAlloc               equ  0x50B06755
+timeGetTime             equ  0xFA9D45D3
 
 %define  opengl32base             ebp-4
 %define  kernel32base             ebp-8
@@ -43,11 +44,16 @@ HeapAlloc               equ  0x50B06755
 %define  shaderProgram            ebp-56
 %define  hHeap                    ebp-60
 %define  vertAlloc                ebp-64
+%define  startTime                ebp-68
+%define  winmmbase                ebp-72
+%define  curTime                  ebp-76
+%define  __unused_var__           ebp-80
 
-STACK_LOCALS_SIZE  equ  64
+STACK_LOCALS_SIZE  equ  80
 
 XRES  equ  1280
 YRES  equ   720
+DEMO_LENGTH  equ  10000
 
 BASE       equ  0x00400000
 ALIGNMENT  equ  4
@@ -121,14 +127,14 @@ main_part_3:
         dd RVA(the_end)               ; size of image
         dd RVA(opt_hdr)               ; size of headers (must be small enough
                                       ; so that entry point inside header is accepted)
-        dd 0                          ; [UNUSED-4] checksum
+dd1000: dd 1000                       ; [UNUSED-4] checksum,  Stores 1000 so we can turn millis in to secs.
         dw 3                          ; subsystem = 2:GUI  3:Console
         dw 0                          ; [UNUSED-2] DLL characteristics
         dd 0x00100000                 ; maximum stack size
         dd 0x00001000                 ; initial stack size
         dd 0x00100000                 ; maximum heap size
         dd 0x00001000                 ; initial heap size
-        dd 0                          ; [UNUSED-4] loader flags
+        dd 10000                      ; [UNUSED-4] loader flags
         dd 0                          ; number of data directory entries (= none!)
 
 ; FUNCTION that calls procedure [esi] in library at base [ebx]. DWORD return values come back in [eax]
@@ -187,23 +193,26 @@ main_part_4:
         mov [user32base], eax
 
     ; opengl32base = LoadLibraryA( "opengl32.dll" );
-        mov esi, LoadLibraryA
         push str_opengl32
         call call_import
         mov [opengl32base], eax
 
     ; gdi32base = LoadLibraryA( "gdi32.dll" );
-        mov esi, LoadLibraryA
         push str_gdi32
         call call_import
         mov [gdi32base], eax
 
-    ; ChangeDisplaySettingsA( &screenSettings, CDS_FULLSCREEN );
-        push 4
-        push displaySettings
-        mov ebx, [user32base]
-        mov esi, ChangeDisplaySettingsA
+    ; winmmbase = LoadLibraryA( "winmm.dll" );
+        push str_winmm
         call call_import
+        mov [winmmbase], eax
+
+    ; ChangeDisplaySettingsA( &screenSettings, CDS_FULLSCREEN );
+    ;   push 4
+    ;   push displaySettings
+    ;   mov ebx, [user32base]
+    ;   mov esi, ChangeDisplaySettingsA
+    ;   call call_import
 
     ; ShowCursor( 0 );
         push 0
@@ -270,13 +279,10 @@ main_part_4:
 
     ; oglFUNCTION = wglGetProcAddress( str_glFUNCTION )
         ; assume ebx = [opengl32base]
-
-        push str_glCreateShaderProgramv
-        mov ebx, [opengl32base]
         mov esi, wglGetProcAddress
+        push str_glCreateShaderProgramv
         call call_import
         mov [oglCreateShaderProgramv], eax
-
         push str_glGenProgramPipelines
         call call_import
         mov [oglGenProgramPipelines], eax
@@ -340,29 +346,52 @@ main_part_4:
         push eax
         call [oglUseProgramStages]
 
-    ; glRects( -1, -1, 1, 1 );
-        push 1
-        push 1
-        push -1
-        push -1
-        mov ebx, [opengl32base]
-        mov esi, glRects
+    ; startTime = timeGetTime();
+        mov ebx, [winmmbase]
+        mov esi, timeGetTime
         call call_import
+        mov dword [startTime], eax
 
-    ; wglSwapLayerBuffers( hDC, WGL_SWAP_MAIN_PLANE );
-        push 1
-        push dword [hDC]
-        mov ebx, [opengl32base]
-        mov esi, wglSwapLayerBuffers
-        call call_import
-        or eax, eax
-        jz error
+    ; while( true ) {
+drawLoop:
 
-    ; Sleep( 5000 );
-        push 5000
-        mov ebx, [kernel32base]
-        mov esi, Sleep
-        call call_import
+        ; if( (curTime = timeGetTime() - startTime) > END_TIME ) break;
+            mov ebx, [winmmbase]
+            mov esi, timeGetTime
+            call call_import
+            sub eax, dword [startTime]
+            cmp eax, DEMO_LENGTH
+            jg exit
+            mov [curTime], eax
+            fild dword [curTime]
+            fidiv dword [dd1000]
+            fst dword [curTime]
+
+        ; glProgramUniform1f( fragShader, 0, curTime );
+            push dword [curTime]
+            push 0
+            push dword [fragShader]
+            call [oglProgramUniform1f]
+
+        ; glRects( -1, -1, 1, 1 );
+            push 1
+            push 1
+            push -1
+            push -1
+            mov ebx, [opengl32base]
+            mov esi, glRects
+            call call_import
+
+        ; wglSwapLayerBuffers( hDC, WGL_SWAP_MAIN_PLANE );
+            push 1
+            push dword [hDC]
+            mov ebx, [opengl32base]
+            mov esi, wglSwapLayerBuffers
+            call call_import
+            or eax, eax
+            jz error
+
+            jmp drawLoop
 
 exit:
     ; ExitProcess( 0 );
@@ -387,6 +416,7 @@ error:
 str_errorMessage:            db "Error!", 0
 str_opengl32:                db "opengl32.dll", 0
 str_gdi32:                   db "gdi32.dll", 0
+str_winmm:                   db "winmm.dll", 0
 str_glCreateShaderProgramv:  db "glCreateShaderProgramv", 0
 str_glGenProgramPipelines:   db "glGenProgramPipelines", 0
 str_glBindProgramPipeline:   db "glBindProgramPipeline", 0
@@ -396,7 +426,7 @@ str_glProgramUniform1f:      db "glProgramUniform1f", 0
 str_vertexShader:
         db "#version 430",10,"layout(location=0)in vec2 g;out gl_PerVertex{vec4 gl_Position;};void main(){gl_Position=vec4(g,0.,1.);}",0
 str_fragmentShader:
-        db "#version 430",10,"layout(location=0)uniform float q;layout(location=0)out vec4 n;void main(){vec2 v=gl_FragCoord.xy/vec2(720)-vec2(.888889,.5);float l=length(v);n=1.-vec4(l+.5+.2*sin(10.*v.x),l+.5+.02*sin(1.*v.y),l+sin(50.*l),0.);}", 0
+        db "#version 430",10,"layout(location=0)uniform float q;layout(location=0)out vec4 n;void main(){vec2 v=gl_FragCoord.xy/vec2(720)-vec2(.888889,.5);float l=length(v);n=1.-vec4(l+.5+.2*sin(10.*v.x),l+.5+.02*sin(1.*v.y),l+sin(q+50.*l),0.);}", 0
 
 displaySettings:
         dd 0                ; BYTE dmDeviceName[32];
