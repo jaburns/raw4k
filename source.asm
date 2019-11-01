@@ -27,6 +27,7 @@ glRects                 equ  0x458B2E59
 GetProcessHeap          equ  0x100E6A8D
 HeapAlloc               equ  0x50B06755
 timeGetTime             equ  0xFA9D45D3
+GetAsyncKeyState        equ  0x247C888E 
 
 %define  opengl32base             ebp-4
 %define  kernel32base             ebp-8
@@ -53,7 +54,7 @@ STACK_LOCALS_SIZE  equ  80
 
 XRES  equ  1280
 YRES  equ   720
-DEMO_LENGTH  equ  10000
+DEMO_LENGTH  equ  100000
 
 BASE       equ  0x00400000
 ALIGNMENT  equ  4
@@ -208,11 +209,11 @@ main_part_4:
         mov [winmmbase], eax
 
     ; ChangeDisplaySettingsA( &screenSettings, CDS_FULLSCREEN );
-    ;   push 4
-    ;   push displaySettings
-    ;   mov ebx, [user32base]
-    ;   mov esi, ChangeDisplaySettingsA
-    ;   call call_import
+        push 4
+        push displaySettings
+        mov ebx, [user32base]
+        mov esi, ChangeDisplaySettingsA
+        call call_import
 
     ; ShowCursor( 0 );
         push 0
@@ -352,7 +353,7 @@ main_part_4:
         call call_import
         mov dword [startTime], eax
 
-    ; while( true ) {
+    ; for( ;; ) {
 drawLoop:
 
         ; if( (curTime = timeGetTime() - startTime) > END_TIME ) break;
@@ -388,10 +389,15 @@ drawLoop:
             mov ebx, [opengl32base]
             mov esi, wglSwapLayerBuffers
             call call_import
-            or eax, eax
-            jz error
 
-            jmp drawLoop
+        ; if( GetAsyncKeyState( VK_ESCAPE ) ) break;
+            push 0x1B
+            mov ebx, [user32base]
+            mov esi, GetAsyncKeyState
+            call call_import
+            or eax, eax
+            jz drawLoop
+    ; }
 
 exit:
     ; ExitProcess( 0 );
@@ -423,10 +429,7 @@ str_glBindProgramPipeline:   db "glBindProgramPipeline", 0
 str_glUseProgramStages:      db "glUseProgramStages", 0
 str_glProgramUniform1f:      db "glProgramUniform1f", 0
 
-str_vertexShader:
-        db "#version 430",10,"layout(location=0)in vec2 g;out gl_PerVertex{vec4 gl_Position;};void main(){gl_Position=vec4(g,0.,1.);}",0
-str_fragmentShader:
-        db "#version 430",10,"layout(location=0)uniform float q;layout(location=0)out vec4 n;void main(){vec2 v=gl_FragCoord.xy/vec2(720)-vec2(.888889,.5);float l=length(v);n=1.-vec4(l+.5+.2*sin(10.*v.x),l+.5+.02*sin(1.*v.y),l+sin(q+50.*l),0.);}", 0
+%include "shaders.asm"
 
 displaySettings:
         dd 0                ; BYTE dmDeviceName[32];
