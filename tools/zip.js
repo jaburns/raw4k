@@ -1,12 +1,14 @@
+#!/usr/bin/env node
+
 const fs = require('fs');
 
-class BufferString
-{
+class BufferString {
     constructor(s) {
-        if (typeof s === 'string')
+        if (typeof s === 'string') {
             this.buffer = Buffer.from(s);
-        else
+        } else {
             this.buffer = s;
+        }
     }
 
     get length() {
@@ -106,14 +108,18 @@ const compress = buffer => {
     }
 
     replacedLookup.unshift(Buffer.from([ replacedLookup.length / 2 ]));
-
     const dictionary = new BufferString(Buffer.concat(replacedLookup));
-
-    return BufferString.join([ dictionary, str ]).buffer;
-}
+    const strLen = new BufferString(Buffer.from([ str.length % 256, Math.floor(str.length / 256) ]));
+    return BufferString.join([ dictionary, strLen, str ]).buffer;
+};
 
 const inputBuffer = fs.readFileSync('raw4k.exe');
 const result = compress(inputBuffer);
+
+let bytes = [];
+Array.prototype.push.apply(bytes, result);
+
+fs.writeFileSync('compressed.h', `const char DATA[] = { ${bytes.join(',')} };`);
 fs.writeFileSync('compressed.bin', result);
 
 

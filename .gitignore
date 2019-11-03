@@ -1,3 +1,8 @@
-odb/
-raw4k.exe
-shaders.asm
+/tools/odb/
+/tools/unzip_c/.vs/
+/tools/unzip_c/Debug/
+/tools/unzip_c/Release/
+/tools/unzip_c/*.exe
+/tools/unzip_c/*.vcxproj.*
+/*.exe
+/src/shaders.asm

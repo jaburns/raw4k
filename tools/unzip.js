@@ -13,8 +13,14 @@ const unzip = buffer => {
         dictSize--;
     }
 
+    let size0 = buffer[i++];
+    let size1 = buffer[i++];
+    let size = size0 + 256*size1;
+    console.log(size0, size1);
+    let j = i;
+
     let outBytes = [];
-    while (i < buffer.length) {
+    while (i - j < size) {
         let byte = buffer[i++];
         if (byte == 0xFF) {
             Array.prototype.push.apply(outBytes, dict[buffer[i++]]);
@@ -28,4 +34,5 @@ const unzip = buffer => {
 
 const inputBuffer = fs.readFileSync('compressed.bin');
 const result = unzip(inputBuffer);
-fs.writeFileSync('uncompressed.exe', result);
+
+fs.writeFileSync('outjs.exe', result);

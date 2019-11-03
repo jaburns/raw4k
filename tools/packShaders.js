@@ -26,14 +26,12 @@ const packSpaces = s => {
 const pack = s => {
     console.log(getFunctionNames(s));
     return packSpaces(oneLine(s));
-}
+};
 
-const vert = pack(fs.readFileSync('shader.vert', 'utf8'));
-const frag = pack(fs.readFileSync('shader.frag', 'utf8'));
+const vert = pack(fs.readFileSync('src/shader.vert', 'utf8'));
+const frag = pack(fs.readFileSync('src/shader.frag', 'utf8'));
 
-console.log(frag);
-
-fs.writeFileSync('shaders.asm', `
+fs.writeFileSync('src/shaders.asm', `
 str_vertexShader:
         db "#version 430",10,"${vert}",0
 str_fragmentShader:
