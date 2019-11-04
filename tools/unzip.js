@@ -32,7 +32,6 @@ const unzip = buffer => {
     return Buffer.from(outBytes);
 };
 
-const inputBuffer = fs.readFileSync('compressed.bin');
+const inputBuffer = fs.readFileSync('code.z');
 const result = unzip(inputBuffer);
-
-fs.writeFileSync('outjs.exe', result);
+fs.writeFileSync('code.bin.unz', result);

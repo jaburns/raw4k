@@ -113,14 +113,12 @@ const compress = buffer => {
     return BufferString.join([ dictionary, strLen, str ]).buffer;
 };
 
-const inputBuffer = fs.readFileSync('raw4k.exe');
+const inputBuffer = fs.readFileSync('code.bin');
 const result = compress(inputBuffer);
-
-let bytes = [];
+const bytes = [];
 Array.prototype.push.apply(bytes, result);
-
-fs.writeFileSync('compressed.h', `const char DATA[] = { ${bytes.join(',')} };`);
-fs.writeFileSync('compressed.bin', result);
+fs.writeFileSync('code.h', `const char DATA[] = { ${bytes.join(',')} };`);
+fs.writeFileSync('code.z', result);
 
 
 
