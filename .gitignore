@@ -4,5 +4,5 @@
 /tools/unzip_c/Release/
 /tools/unzip_c/*.exe
 /tools/unzip_c/*.vcxproj.*
-/*.exe
+/bin/
 /src/shaders.asm

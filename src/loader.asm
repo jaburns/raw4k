@@ -92,5 +92,5 @@ call_import:
 
 section .data
 
-codeData: incbin "../code.bin"
+codeData: incbin "../bin/code.bin"
 codeSize: dw     (codeSize - codeData)

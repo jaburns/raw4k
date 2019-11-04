@@ -43,8 +43,6 @@ GetAsyncKeyState        equ  0x247C888E
 %define  vertShader               ebp-48
 %define  fragShader               ebp-52
 %define  shaderProgram            ebp-56
-%define  hHeap                    ebp-60
-%define  vertAlloc                ebp-64
 %define  startTime                ebp-68
 %define  winmmbase                ebp-72
 %define  curTime                  ebp-76
