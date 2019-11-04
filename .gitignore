@@ -5,4 +5,4 @@
 /tools/unzip_c/*.exe
 /tools/unzip_c/*.vcxproj.*
 /bin/
-/src/shaders.asm
+/src/shaders.inc

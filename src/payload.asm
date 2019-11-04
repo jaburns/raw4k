@@ -1,3 +1,6 @@
+;======================================================================================================
+;  Intro payload, compressed and embedded in final EXE
+;
 BITS 32
 
 %define kernel32base  ebp-16
@@ -46,6 +49,17 @@ XRES         equ    1280
 YRES         equ     720
 DEMO_LENGTH  equ  100000
 
+%macro loadVar 1
+        mov eax, [dataPtr]
+        add eax, (%1 - data_start)
+%endmacro
+
+%macro pushVar 1
+        mov eax, [dataPtr]
+        add eax, (%1 - data_start)
+        push eax
+%endmacro
+
 start:
         call postData
 
@@ -62,18 +76,7 @@ str_glUseProgramStages:      db "glUseProgramStages", 0
 str_glProgramUniform1i:      db "glProgramUniform1i"
 str_empty:                   db 0
 
-%include "shaders.asm"
-
-%macro loadVar 1
-        mov eax, [dataPtr]
-        add eax, (%1 - data_start)
-%endmacro
-
-%macro pushVar 1
-        mov eax, [dataPtr]
-        add eax, (%1 - data_start)
-        push eax
-%endmacro
+%include "shaders.inc"
 
 displaySettings:
         dd 0                ; BYTE dmDeviceName[32];

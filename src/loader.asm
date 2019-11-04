@@ -1,19 +1,64 @@
+;======================================================================================================
+;  Ultra-small EXE layout and hash-based DLL function finder forked from KeyJ's console clipboard app
+;    https://keyj.emphy.de/win32-pe/
+;
 BITS 32
-
-global _mainCRTStartup
-section .text
 
 LoadLibraryA  equ  0x01364564
 VirtualAlloc  equ  0x57F34BD3
 CreateFileA   equ  0x5023E3C4
 ReadFile      equ  0xF0B5A43F
 
-;%define fileBuffer    ebp-4
-
 %define kernel32base  ebp-16
 %define callImport    ebp-20
 
-_mainCRTStartup:
+BASE       equ  0x00400000
+ALIGNMENT  equ  4
+SECTALIGN  equ  4
+
+%define RVA(obj) (obj - BASE)
+
+org BASE
+
+mz_hdr: dw "MZ"                       ; DOS magic
+        dw "jb"                       ; filler to align the PE header
+pe_hdr: dw "PE",0                     ; PE magic + 2 padding bytes
+        dw 0x014c                     ; i386 architecture
+dw_zero:
+        dw 0                          ; no sections
+        dd 0                          ; [UNUSED-12] timestamp
+        dd 0                          ; [UNUSED] symbol table pointer
+        dd 0                          ; [UNUSED] symbol count
+        dw 8                          ; optional header size
+        dw 0x0102                     ; characteristics: 32-bit, executable
+opt_hdr:
+        dw 0x010b                     ; optional header magic
+        db 13,37                      ; [UNUSED-14] linker version
+        dd 0                          ; [UNUSED] code size
+        dd 0                          ; [UNUSED] size of initialized data
+        dd 0                          ; [UNUSED] size of uninitialized data
+        dd RVA(main)                  ; entry point address
+        dd 0                          ; [UNUSED-8] base of code
+        dd 0                          ; [UNUSED] base of data
+        dd BASE                       ; image base
+        dd SECTALIGN                  ; section alignment (collapsed with the PE header offset in the DOS header)
+        dd ALIGNMENT                  ; file alignment
+        dw 4,0                        ; [UNUSED-8] OS version
+        dw 0,0                        ; [UNUSED] image version
+        dw 4,0                        ; subsystem version
+        dd 0                          ; [UNUSED-4] Win32 version
+        dd RVA(the_end)               ; size of image
+        dd RVA(opt_hdr)               ; size of headers (must be small enough so that entry point inside header is accepted)
+        dd 0                          ; [UNUSED-4] checksum
+        dw 2                          ; subsystem = 2:GUI  3:Console
+        dw 0                          ; [UNUSED-2] DLL characteristics
+        dd 0x00100000                 ; maximum stack size
+        dd 0x00001000                 ; initial stack size
+        dd 0x00100000                 ; maximum heap size
+        dd 0x00001000                 ; initial heap size
+        dd 10000                      ; [UNUSED-4] loader flags
+        dd 0                          ; number of data directory entries (= none!)
+main:
     ; Stack setup
         mov ebp, esp
         sub esp, 0x100                ; 256 bytes ought to be enough for anyone
@@ -37,10 +82,10 @@ _mainCRTStartup:
         mov esi, VirtualAlloc
         call call_import
 
-    ; strncpy( [eax], &codeData, codeSize );
+    ; strncpy( [eax], &payloadData, payloadSize );
         mov edi, eax
-        lea esi, byte [codeData]
-        mov cx, word [codeSize]
+        lea esi, byte [payloadData]
+        mov cx, word [payloadSize]
     strCopyLoop:
         mov dx, [esi]
         mov [edi], dx
@@ -90,7 +135,8 @@ call_import:
         dec ecx                       ; decrease counter
         jmp .name_loop
 
-section .data
+payloadData: incbin "../bin/payload.bin"
+payloadSize: dw     (payloadSize - payloadData)
 
-codeData: incbin "../bin/code.bin"
-codeSize: dw     (codeSize - codeData)
+align ALIGNMENT, db 0
+the_end:

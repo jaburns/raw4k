@@ -31,7 +31,7 @@ const pack = s => {
 const vert = pack(fs.readFileSync('src/shader.vert', 'utf8'));
 const frag = pack(fs.readFileSync('src/shader.frag', 'utf8'));
 
-fs.writeFileSync('src/shaders.asm', `
+fs.writeFileSync('src/shaders.inc', `
 str_vertexShader:
         db "#version 430",10,"${vert}",0
 str_fragmentShader:
