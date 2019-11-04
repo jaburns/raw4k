@@ -13,7 +13,7 @@ BITS 32
 %define oglGenProgramPipelines   ebp-128-32
 %define oglBindProgramPipeline   ebp-128-36
 %define oglUseProgramStages      ebp-128-40
-%define oglProgramUniform1f      ebp-128-44
+%define oglProgramUniform1i      ebp-128-44
 %define vertShader               ebp-128-48
 %define fragShader               ebp-128-52
 %define shaderProgram            ebp-128-56
@@ -59,7 +59,7 @@ str_glCreateShaderProgramv:  db "glCreateShaderProgramv", 0
 str_glGenProgramPipelines:   db "glGenProgramPipelines", 0
 str_glBindProgramPipeline:   db "glBindProgramPipeline", 0
 str_glUseProgramStages:      db "glUseProgramStages", 0
-str_glProgramUniform1f:      db "glProgramUniform1f"
+str_glProgramUniform1i:      db "glProgramUniform1i"
 str_empty:                   db 0
 
 %include "shaders.asm"
@@ -276,9 +276,9 @@ postData:
         pushVar str_glUseProgramStages
         call [callImport]
         mov [oglUseProgramStages], eax
-        pushVar str_glProgramUniform1f
+        pushVar str_glProgramUniform1i
         call [callImport]
-        mov [oglProgramUniform1f], eax
+        mov [oglProgramUniform1i], eax
 
     ; vertShader = oglCreateShaderProgramv( GL_VERTEX_SHADER, 1, &str_vertexShader )
         loadVar str_vertexShader
@@ -338,8 +338,6 @@ postData:
         call [callImport]
         mov dword [startTime], eax
 
-        mov dword [int1000], 1000
-
     ; for( ;; ) {
 drawLoop:
 
@@ -351,15 +349,12 @@ drawLoop:
             cmp eax, DEMO_LENGTH
             jg exit
             mov [curTime], eax
-            fild dword [curTime]
-            fidiv dword [int1000]
-            fst dword [curTime]
 
-        ; glProgramUniform1f( fragShader, 0, curTime );
+        ; glProgramUniform1i( fragShader, 0, curTime );
             push dword [curTime]
             push 0
             push dword [fragShader]
-            call [oglProgramUniform1f]
+            call [oglProgramUniform1i]
 
         ; glRects( -1, -1, 1, 1 );
             push 1
