@@ -109,16 +109,16 @@ const compress = buffer => {
 
     replacedLookup.unshift(Buffer.from([ replacedLookup.length / 2 ]));
     const dictionary = new BufferString(Buffer.concat(replacedLookup));
-    const strLen = new BufferString(Buffer.from([ str.length % 256, Math.floor(str.length / 256) ]));
-    return BufferString.join([ dictionary, strLen, str ]).buffer;
+//  const strLen = new BufferString(Buffer.from([ str.length % 256, Math.floor(str.length / 256) ]));
+    return BufferString.join([ dictionary, str ]).buffer;
 };
 
-const inputBuffer = fs.readFileSync('code.bin');
+const inputBuffer = fs.readFileSync('bin/payload.bin');
 const result = compress(inputBuffer);
-const bytes = [];
-Array.prototype.push.apply(bytes, result);
-fs.writeFileSync('code.h', `const char DATA[] = { ${bytes.join(',')} };`);
-fs.writeFileSync('code.z', result);
+// const bytes = [];
+// Array.prototype.push.apply(bytes, result);
+// fs.writeFileSync('bin/payload.h', `const char DATA[] = { ${bytes.join(',')} };`);
+fs.writeFileSync('bin/payload.z', result);
 
 
 

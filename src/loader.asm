@@ -13,8 +13,6 @@ ReadFile      equ  0xF0B5A43F
 %define callImport    ebp-20
 
 BASE       equ  0x00400000
-ALIGNMENT  equ  4
-SECTALIGN  equ  4
 
 %define RVA(obj) (obj - BASE)
 
@@ -41,8 +39,8 @@ opt_hdr:
         dd 0                          ; [UNUSED-8] base of code
         dd 0                          ; [UNUSED] base of data
         dd BASE                       ; image base
-        dd SECTALIGN                  ; section alignment (collapsed with the PE header offset in the DOS header)
-        dd ALIGNMENT                  ; file alignment
+        dd 4                          ; section alignment (collapsed with the PE header offset in the DOS header)
+        dd 4                          ; file alignment
         dw 4,0                        ; [UNUSED-8] OS version
         dw 0,0                        ; [UNUSED] image version
         dw 4,0                        ; subsystem version
@@ -78,22 +76,29 @@ main:
         push (0x00001000 | 0x00002000)
         push 0x8000
         push 0
-    ;   mov ebx, [kernel32base]
         mov esi, VirtualAlloc
         call call_import
+
+%ifdef DEBUG
 
     ; strncpy( [eax], &payloadData, payloadSize );
         mov edi, eax
         lea esi, byte [payloadData]
-        mov cx, word [payloadSize]
-    strCopyLoop:
+        mov cx, (the_end - payloadData)
+    .strCopyLoop:
         mov dx, [esi]
         mov [edi], dx
         inc edi
         inc esi
         dec cx
-        jnz strCopyLoop
+        jnz .strCopyLoop
         jmp eax
+
+%else
+
+    %include "unpack.inc"
+
+%endif
 
 call_import:  
         mov edx, [ebx+0x3c]           ; get PE header pointer (w/ RVA translation)
@@ -104,19 +109,19 @@ call_import:
         mov ecx, [edx+0x18]           ; ecx = number of named functions
         mov edx, [edx+0x20]           ; edx = address-of-names list (w/ RVA translation)
         add edx, ebx
-    .name_loop:
+    .nameLoop:
         push esi                      ; store the desired function name's hash (we will clobber it)
         mov edi, [edx]                ; load function name (w/ RVA translation)
         add edi, ebx
-    .cmp_loop:
+    .cmpLoop:
         movzx eax, byte [edi]         ; load a byte of the name ...
         inc edi                       ; ... and advance the pointer
         xor esi, eax                  ; apply xor-and-rotate
         rol esi, 7
         or eax, eax                   ; last byte?
-        jnz .cmp_loop                 ; if not, process another byte
+        jnz .cmpLoop                  ; if not, process another byte
         or esi, esi                   ; result hash match?
-        jnz .next_name                ; if not, this is not the correct name
+        jnz .nextName                 ; if not, this is not the correct name
         pop esi                       ; restore the name pointer (though we don't use it any longer)
         pop edx                       ; restore the export table address
         sub ecx, [edx+0x18]           ; turn the negative counter ECX into a positive one
@@ -129,14 +134,18 @@ call_import:
         mov eax, [eax+ecx*4]          ; load function address (w/ RVA translation)
         add eax, ebx
         jmp eax                       ; jump to the target function
-    .next_name:
+    .nextName:
         pop esi                       ; restore the name pointer
         add edx, 4                    ; advance to next list item
         dec ecx                       ; decrease counter
-        jmp .name_loop
+        jmp .nameLoop
 
-payloadData: incbin "../bin/payload.bin"
-payloadSize: dw     (payloadSize - payloadData)
+payloadData:
+    %ifdef DEBUG
+        incbin "../bin/payload.bin"
+    %else
+        incbin "../bin/payload.z"
+    %endif
 
-align ALIGNMENT, db 0
+align 4, db 0
 the_end:

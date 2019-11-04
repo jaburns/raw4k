@@ -13,14 +13,8 @@ const unzip = buffer => {
         dictSize--;
     }
 
-    let size0 = buffer[i++];
-    let size1 = buffer[i++];
-    let size = size0 + 256*size1;
-    console.log(size0, size1);
-    let j = i;
-
     let outBytes = [];
-    while (i - j < size) {
+    while (i < buffer.length) {
         let byte = buffer[i++];
         if (byte == 0xFF) {
             Array.prototype.push.apply(outBytes, dict[buffer[i++]]);
@@ -32,6 +26,6 @@ const unzip = buffer => {
     return Buffer.from(outBytes);
 };
 
-const inputBuffer = fs.readFileSync('code.z');
+const inputBuffer = fs.readFileSync('./bin/payload.z');
 const result = unzip(inputBuffer);
-fs.writeFileSync('code.bin.unz', result);
+fs.writeFileSync('./bin/payload.bin.unz', result);
