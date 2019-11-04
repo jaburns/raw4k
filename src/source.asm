@@ -64,70 +64,35 @@ SECTALIGN  equ  4
 
 org BASE
 
-mz_hdr:
-        dw "MZ"                       ; DOS magic
+mz_hdr: dw "MZ"                       ; DOS magic
         dw "jb"                       ; filler to align the PE header
-
-pe_hdr:
-        dw "PE",0                     ; PE magic + 2 padding bytes
+pe_hdr: dw "PE",0                     ; PE magic + 2 padding bytes
         dw 0x014c                     ; i386 architecture
-
 dw_zero:
         dw 0                          ; no sections
-
-str_user32:
-        db "user32.dll",0,0           ; 12 bytes of data collapsed into the header
-      ; dd 0                          ; [UNUSED-12] timestamp
-      ; dd 0                          ; [UNUSED] symbol table pointer
-      ; dd 0                          ; [UNUSED] symbol count
+        dd 0                          ; [UNUSED-12] timestamp
+        dd 0                          ; [UNUSED] symbol table pointer
+        dd 0                          ; [UNUSED] symbol count
         dw 8                          ; optional header size
         dw 0x0102                     ; characteristics: 32-bit, executable
-
 opt_hdr:
         dw 0x010b                     ; optional header magic
-
-; 12 bytes of main entry point + 2 bytes of jump
-main_part_1:
-        mov eax, [fs:0x30]            ; get PEB pointer from TEB
-        mov eax, [eax+0x0C]           ; get PEB_LDR_DATA pointer from PEB
-        mov eax, [eax+0x14]           ; go to first LDR_DATA_TABLE_ENTRY
-        jmp main_part_2
-
-        align 4, db 0
-      ; db 13,37                      ; [UNUSED-14] linker version
-      ; dd RVA(the_end)               ; [UNUSED] code size
-      ; dd RVA(the_end)               ; [UNUSED] size of initialized data
-      ; dd 0                          ; [UNUSED] size of uninitialized data
-        dd RVA(main_part_1)           ; entry point address
-
-; another 5 bytes of code + 2 bytes of jump
-main_part_2:  
-        sub esp, STACK_LOCALS_SIZE    ; save on the stack for local var
-        mov eax, [eax]                ; go to where ntdll.dll typically is
-        jmp main_part_3
-
-        align 4, db 0
-      ; dd RVA(main)                  ; [UNUSED-8] base of code
-      ; dd RVA(main)                  ; [UNUSED] base of data
+        db 13,37                      ; [UNUSED-14] linker version
+        dd 0                          ; [UNUSED] code size
+        dd 0                          ; [UNUSED] size of initialized data
+        dd 0                          ; [UNUSED] size of uninitialized data
+        dd RVA(begin)                 ; entry point address
+        dd 0                          ; [UNUSED-8] base of code
+        dd 0                          ; [UNUSED] base of data
         dd BASE                       ; image base
-        dd SECTALIGN                  ; section alignment (collapsed with the
-                                      ; PE header offset in the DOS header)
+        dd SECTALIGN                  ; section alignment (collapsed with the PE header offset in the DOS header)
         dd ALIGNMENT                  ; file alignment
-
-; another 5 bytes of code + 2 bytes of jump 
-main_part_3:  
-        mov eax, [eax]                ; go to where kernel32.dll typically is
-        mov ebx, [eax+0x10]           ; load base address of the library
-        jmp main_part_4
-
-        align 4, db 0
-      ; dw 4,0                        ; [UNUSED-8] OS version
-      ; dw 0,0                        ; [UNUSED] image version
+        dw 4,0                        ; [UNUSED-8] OS version
+        dw 0,0                        ; [UNUSED] image version
         dw 4,0                        ; subsystem version
         dd 0                          ; [UNUSED-4] Win32 version
         dd RVA(the_end)               ; size of image
-        dd RVA(opt_hdr)               ; size of headers (must be small enough
-                                      ; so that entry point inside header is accepted)
+        dd RVA(opt_hdr)               ; size of headers (must be small enough so that entry point inside header is accepted)
 dd1000: dd 1000                       ; [UNUSED-4] checksum,  Stores 1000 so we can turn millis in to secs.
         dw 3                          ; subsystem = 2:GUI  3:Console
         dw 0                          ; [UNUSED-2] DLL characteristics
@@ -181,7 +146,14 @@ next_name:
         dec ecx                       ; decrease counter
         jmp name_loop
 
-main_part_4:
+begin:
+        mov eax, [fs:0x30]            ; get PEB pointer from TEB
+        mov eax, [eax+0x0C]           ; get PEB_LDR_DATA pointer from PEB
+        mov eax, [eax+0x14]           ; go to first LDR_DATA_TABLE_ENTRY
+        sub esp, STACK_LOCALS_SIZE    ; save on the stack for local var
+        mov eax, [eax]                ; go to where ntdll.dll typically is
+        mov eax, [eax]                ; go to where kernel32.dll typically is
+        mov ebx, [eax+0x10]           ; load base address of the library
         mov [kernel32base], ebx       ; store kernel32's base address
 
 ;=====  Beginning of application code  ============================================================
@@ -419,6 +391,8 @@ error:
 
 ;=====  Data section  =============================================================================
 
+
+str_user32:                  db "user32.dll",0
 str_errorMessage:            db "Error!", 0
 str_opengl32:                db "opengl32.dll", 0
 str_gdi32:                   db "gdi32.dll", 0
