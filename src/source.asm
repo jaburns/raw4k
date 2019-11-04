@@ -39,7 +39,7 @@ GetAsyncKeyState        equ  0x247C888E
 %define  oglGenProgramPipelines   ebp-32
 %define  oglBindProgramPipeline   ebp-36
 %define  oglUseProgramStages      ebp-40
-%define  oglProgramUniform1f      ebp-44
+%define  oglProgramUniform1i      ebp-44
 %define  vertShader               ebp-48
 %define  fragShader               ebp-52
 %define  shaderProgram            ebp-56
@@ -181,11 +181,11 @@ begin:
         mov [winmmbase], eax
 
     ; ChangeDisplaySettingsA( &screenSettings, CDS_FULLSCREEN );
-        push 4
-        push displaySettings
-        mov ebx, [user32base]
-        mov esi, ChangeDisplaySettingsA
-        call call_import
+    ;   push 4
+    ;   push displaySettings
+    ;   mov ebx, [user32base]
+    ;   mov esi, ChangeDisplaySettingsA
+    ;   call call_import
 
     ; ShowCursor( 0 );
         push 0
@@ -265,9 +265,9 @@ begin:
         push str_glUseProgramStages
         call call_import
         mov [oglUseProgramStages], eax
-        push str_glProgramUniform1f
+        push str_glProgramUniform1i
         call call_import
-        mov [oglProgramUniform1f], eax
+        mov [oglProgramUniform1i], eax
 
     ; vertShader = oglCreateShaderProgramv( GL_VERTEX_SHADER, 1, str_vertexShader )
         mov dword [vertShader], str_vertexShader
@@ -336,15 +336,12 @@ drawLoop:
             cmp eax, DEMO_LENGTH
             jg exit
             mov [curTime], eax
-            fild dword [curTime]
-            fidiv dword [dd1000]
-            fst dword [curTime]
 
-        ; glProgramUniform1f( fragShader, 0, curTime );
+        ; glProgramUniform1i( fragShader, 0, curTime );
             push dword [curTime]
             push 0
             push dword [fragShader]
-            call [oglProgramUniform1f]
+            call [oglProgramUniform1i]
 
         ; glRects( -1, -1, 1, 1 );
             push 1
@@ -402,7 +399,7 @@ str_glCreateShaderProgramv:  db "glCreateShaderProgramv", 0
 str_glGenProgramPipelines:   db "glGenProgramPipelines", 0
 str_glBindProgramPipeline:   db "glBindProgramPipeline", 0
 str_glUseProgramStages:      db "glUseProgramStages", 0
-str_glProgramUniform1f:      db "glProgramUniform1f", 0
+str_glProgramUniform1i:      db "glProgramUniform1i", 0
 
 %include "shaders.asm"
 

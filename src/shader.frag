@@ -1,4 +1,4 @@
-layout (location=0) uniform float x_time;
+layout (location=0) uniform int x_time;
 layout (location=0) out vec4 x_fragColor;
 
 mat2 rot( float theta )
@@ -81,7 +81,7 @@ March march( vec3 ro, vec3 rd, float t )
 
 void main()
 {
-    float iTime = x_time;
+    float iTime = float(x_time) / 1000.;
     vec2 uv = gl_FragCoord.xy / vec2(720) - vec2(.5*1280./720., .5);
     
     vec3 ro = vec3(3.*iTime,5.,5.*iTime);
