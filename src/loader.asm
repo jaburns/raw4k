@@ -12,70 +12,85 @@ ReadFile      equ  0xF0B5A43F
 %define kernel32base  ebp-16
 %define callImport    ebp-20
 
-BASE       equ  0x00400000
+BASE        equ  0x00400000
+FRAME_SIZE  equ  0x100
 
 %define RVA(obj) (obj - BASE)
 
 org BASE
 
-mz_hdr: dw "MZ"                       ; DOS magic
-        dw "jb"                       ; filler to align the PE header
-pe_hdr: dw "PE",0                     ; PE magic + 2 padding bytes
-        dw 0x014c                     ; i386 architecture
-dw_zero:
-        dw 0                          ; no sections
-        dd 0                          ; [UNUSED-12] timestamp
-        dd 0                          ; [UNUSED] symbol table pointer
-        dd 0                          ; [UNUSED] symbol count
-        dw 8                          ; optional header size
-        dw 0x0102                     ; characteristics: 32-bit, executable
-opt_hdr:
-        dw 0x010b                     ; optional header magic
-        db 13,37                      ; [UNUSED-14] linker version
-        dd 0                          ; [UNUSED] code size
-        dd 0                          ; [UNUSED] size of initialized data
-        dd 0                          ; [UNUSED] size of uninitialized data
-        dd RVA(main)                  ; entry point address
-        dd 0                          ; [UNUSED-8] base of code
-        dd 0                          ; [UNUSED] base of data
-        dd BASE                       ; image base
-        dd 4                          ; section alignment (collapsed with the PE header offset in the DOS header)
-        dd 4                          ; file alignment
-        dw 4,0                        ; [UNUSED-8] OS version
-        dw 0,0                        ; [UNUSED] image version
-        dw 4,0                        ; subsystem version
-        dd 0                          ; [UNUSED-4] Win32 version
-        dd RVA(the_end)               ; size of image
-        dd RVA(opt_hdr)               ; size of headers (must be small enough so that entry point inside header is accepted)
-        dd 0                          ; [UNUSED-4] checksum
-        dw 2                          ; subsystem = 2:GUI  3:Console
-        dw 0                          ; [UNUSED-2] DLL characteristics
-        dd 0x00100000                 ; maximum stack size
-        dd 0x00001000                 ; initial stack size
-        dd 0x00100000                 ; maximum heap size
-        dd 0x00001000                 ; initial heap size
-        dd 10000                      ; [UNUSED-4] loader flags
-        dd 0                          ; number of data directory entries (= none!)
-main:
-    ; Stack setup
-        mov ebp, esp
-        sub esp, 0x100                ; 256 bytes ought to be enough for anyone
+mz_hdr: dw "MZ"                   ; DOS magic
+        dw "jb"                   ; filler to align the PE header
 
-    ; Find kernel32
-        mov eax, [fs:0x30]            ; get PEB pointer from TEB
-        mov eax, [eax+0x0C]           ; get PEB_LDR_DATA pointer from PEB
-        mov eax, [eax+0x14]           ; go to first LDR_DATA_TABLE_ENTRY
-        mov eax, [eax]                ; go to where ntdll.dll typically is
-        mov eax, [eax]                ; go to where kernel32.dll typically is
-        mov ebx, [eax+0x10]           ; load base address of the library
+pe_hdr: dw "PE",0                 ; PE magic + 2 padding bytes
+        dw 0x014c                 ; i386 architecture
+        dw 0                      ; no sections
+
+main1:  ; 12 unused bytes
+        mov eax, [eax+0x14]       ; go to first LDR_DATA_TABLE_ENTRY
+        mov eax, [eax]            ; go to where ntdll.dll typically is
+        mov eax, [eax]            ; go to where kernel32.dll typically is
+        mov ebx, [eax+0x10]       ; load base address of the library
+        jmp main2
+
+        dw 8                      ; optional header size
+        dw 0x0102                 ; characteristics: 32-bit, executable
+opt_hdr:
+        dw 0x010b                 ; optional header magic
+
+main0:  ; 14 unused bytes
+        mov eax, [fs:0x30]        ; get PEB pointer from TEB
+        mov eax, [eax+0x0C]       ; get PEB_LDR_DATA pointer from PEB
+        mov ebp, esp              ; setup stack base pointer
+        jmp main1
+        db 0
+
+        dd RVA(main0)             ; entry point address
+
+main2:  ; 8 unused bytes
+        sub esp, FRAME_SIZE       ; set aside some space for local vars
+        jmp main3
+
+        dd BASE                   ; image base
+        dd 4                      ; section alignment (collapsed with the PE header offset in the DOS header)
+        dd 4                      ; file alignment
+
+        ; 8 unused bytes
+main5:  push (0x00001000 | 0x00002000) ; 3rd arg to VirtualAlloc: MEM_COMMIT | MEM_RESERVE
+        jmp main6
+        db 0
+
+        dw 4,0                    ; subsystem version
+
+main3:  ; 4 unused bytes
+        push 0x40                 ; 4th arg to VirtualAlloc: PAGE_EXECUTE_READWRITE
+        jmp main4
+
+        dd RVA(the_end)           ; size of image
+        dd RVA(opt_hdr)           ; size of headers (must be small enough so that entry point inside header is accepted)
+
+        ; 4 unused bytes
+main4:  jmp main5                 ; jumping straight to main5 from main3 crashes for some reason, but this works!
+        dw 0
+
+        dw 2                      ; subsystem = 2:GUI  3:Console
+        dw 0                      ; DLL characteristics
+        dd 0x00100000             ; maximum stack size
+        dd 0x00001000             ; initial stack size
+        dd 0x00100000             ; maximum heap size
+        dd 0x00001000             ; initial heap size
+
+        ; 4 unused bytes
+        dd 0
+
+        dd 0                          ; number of data directory entries (= none!)
+main6:
         mov dword [kernel32base], ebx ; store kernel32's base address
         mov dword [callImport], call_import
 
     ; fileBuffer = VirtualAlloc( 0, 0x8000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE );
-        push 0x40
-        push (0x00001000 | 0x00002000)
-        push 0x8000
-        push 0
+        push 0x8000               ; 2nd arg to VirtualAlloc, size: 0x8000
+        push 0                    ; 1st arg to VirtualAlloc, address: NULL (give us a fresh address)
         mov esi, VirtualAlloc
         call call_import
 
@@ -83,13 +98,13 @@ main:
         mov edi, eax
         lea esi, byte [payloadData]
         mov cx, (the_end - payloadData)
-    .strCopyLoop:
+    strCopyLoop:
         mov dx, [esi]
         mov [edi], dx
         inc edi
         inc esi
         dec cx
-        jnz .strCopyLoop
+        jnz strCopyLoop
         jmp eax
 %else
         push eax
@@ -99,43 +114,43 @@ main:
         lea edx, dword [eax+1]
         xor esi, esi
         mov ecx, esi
-    .dictLoop:
+    dictLoop:
         movzx eax, byte [edx]
         mov dword [esp+ecx*4-2048], edx
         inc edx
         add edx, eax
         inc ecx
         cmp ecx, ebx
-        jl .dictLoop
-    .unpackLoop:
+        jl dictLoop
+    unpackLoop:
         mov al, byte [edx]
         inc edx
         cmp al, 255 
-        jne .copyByte
+        jne copyByte
         movzx eax, byte [edx]
         inc edx
         mov ecx, dword [esp+eax*4-2048]
         movzx ebx, byte [ecx]
         inc ecx
         test ebx, ebx
-        je .endUnpackLoop
+        je endUnpackLoop
         add esi, ebx
-    .copyFromDictLoop:
+    copyFromDictLoop:
         mov al, byte [ecx]
         mov byte [edi], al
         inc edi
         inc ecx
         dec ebx
         test ebx, ebx
-        jg .copyFromDictLoop
-        jmp .endUnpackLoop
-    .copyByte:
+        jg copyFromDictLoop
+        jmp endUnpackLoop
+    copyByte:
         mov byte [edi], al
         inc edi
         inc esi
-    .endUnpackLoop:
+    endUnpackLoop:
         cmp edx, the_end
-        jb .unpackLoop
+        jb unpackLoop
         ret ; pop eax, jmp eax
 %endif
 
