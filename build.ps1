@@ -1,5 +1,7 @@
 param ( [switch]$debug )
 
+mkdir -Force bin/
+
 node tools\packShaders.js
 tools\yasm-1.3.0-win64.exe -o"bin\payload.bin" -l"bin\payload.lst" -fbin src\payload.asm
 

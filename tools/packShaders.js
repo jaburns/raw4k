@@ -2,13 +2,13 @@ const fs = require('fs');
 
 const OPERATORS = '+-*/=(){};,<>?:';
 
-const getFunctionNames = s =>
-    [...s.matchAll(/^[^\n ]* [^ ]* *\([^\)]*\) *$/gm)]
-    .map(x => {
-        let a = x[0].substr(0, x[0].indexOf('('));
-        return a.substr(a.lastIndexOf(' ') + 1);
-    })
-    .filter(x => x !== 'main');
+const getFunctionNames = s => [];
+//  [...s.matchAll(/^[^\n ]* [^ ]* *\([^\)]*\) *$/gm)]
+//  .map(x => {
+//      let a = x[0].substr(0, x[0].indexOf('('));
+//      return a.substr(a.lastIndexOf(' ') + 1);
+//  })
+//  .filter(x => x !== 'main');
 
 const oneLine = s =>
     s.split('\n')
