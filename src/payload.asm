@@ -3,51 +3,7 @@
 ;
 BITS 32
 
-%define kernel32base  ebp-16
-%define callImport    ebp-20
-
-%define dataPtr                  ebp-128
-%define opengl32base             ebp-128-4
-%define user32base               ebp-128-12
-%define gdi32base                ebp-128-16
-%define hWnd                     ebp-128-20
-%define hDC                      ebp-128-24
-%define oglCreateShaderProgramv  ebp-128-28
-%define oglGenProgramPipelines   ebp-128-32
-%define oglBindProgramPipeline   ebp-128-36
-%define oglUseProgramStages      ebp-128-40
-%define oglProgramUniform1i      ebp-128-44
-%define vertShader               ebp-128-48
-%define fragShader               ebp-128-52
-%define shaderProgram            ebp-128-56
-%define startTime                ebp-128-68
-%define winmmbase                ebp-128-72
-%define curTime                  ebp-128-76
-%define int1000                  ebp-128-80
-
-LoadLibraryA            equ  0x01364564
-Sleep                   equ  0xD9972F53
-MessageBoxA             equ  0x36AEF1A0
-ChangeDisplaySettingsA  equ  0x96F0EC1C
-ShowCursor              equ  0x6D065389
-ExitProcess             equ  0x665640AC
-CreateWindowExA         equ  0xAFDFBED6
-GetDC                   equ  0xCBD22477
-ChoosePixelFormat       equ  0xA74979EF
-SetPixelFormat          equ  0x19CADE93
-wglCreateContext        equ  0xF2BF3662
-wglMakeCurrent          equ  0x7DFD750F
-wglSwapLayerBuffers     equ  0xD765358D
-wglGetProcAddress       equ  0x255E1FB7
-glRects                 equ  0x458B2E59
-GetProcessHeap          equ  0x100E6A8D
-HeapAlloc               equ  0x50B06755
-timeGetTime             equ  0xFA9D45D3
-GetAsyncKeyState        equ  0x247C888E 
-
-XRES         equ    1280
-YRES         equ     720
-DEMO_LENGTH  equ  100000
+%include "defs.inc"
 
 %macro loadVar 1
         mov eax, [dataPtr]
@@ -60,8 +16,8 @@ DEMO_LENGTH  equ  100000
         push eax
 %endmacro
 
-start:
-        call postData
+pre_start:
+        call start
 
 data_start:
 
@@ -75,6 +31,9 @@ str_glBindProgramPipeline:   db "glBindProgramPipeline", 0
 str_glUseProgramStages:      db "glUseProgramStages", 0
 str_glProgramUniform1i:      db "glProgramUniform1i"
 str_empty:                   db 0
+
+__real46fffe00:  dd  0x046fffe00
+__real3d806343:  dd  0x03d806343
 
 %include "shaders.inc"
 
@@ -166,7 +125,27 @@ pixelFormatDescriptor:
         dd 0                ; DWORD dwVisibleMask
         dd 0                ; DWORD dwDamageMask
 
-postData:
+%define AUDIO_DURATION        5
+%define AUDIO_RATE        44100
+%define AUDIO_NUMCHANNELS     2
+%define AUDIO_NUMSAMPLES  (AUDIO_DURATION * AUDIO_RATE)
+%define WAVE_FORMAT_PCM       1
+%define SIZEOF_WORD           2
+
+wavHeader:
+        dd 0x46464952
+        dd AUDIO_NUMSAMPLES*2 + 36, 
+        dd 0x45564157, 
+        dd 0x20746D66, 
+        dd 16, 
+        dd WAVE_FORMAT_PCM | (AUDIO_NUMCHANNELS << 16), 
+        dd AUDIO_RATE, 
+        dd AUDIO_RATE * AUDIO_NUMCHANNELS * SIZEOF_WORD,
+        dd (AUDIO_NUMCHANNELS * SIZEOF_WORD) | ((8 * SIZEOF_WORD) << 16),
+        dd 0x61746164, 
+        dd AUDIO_NUMSAMPLES * SIZEOF_WORD
+
+start:
         pop eax
         mov [dataPtr], eax
 
@@ -246,8 +225,6 @@ postData:
         push ecx
         mov esi, SetPixelFormat
         call [callImport]
-    ;   or eax, eax
-    ;   jz error
 
     ; wglMakeCurrent( hDC, wglCreateContext( hDC ));
         mov ecx, [hDC]
@@ -261,8 +238,6 @@ postData:
         push ecx
         mov esi, wglMakeCurrent
         call [callImport]
-    ;   or eax, eax
-    ;   jz error
 
     ; oglFUNCTION = wglGetProcAddress( str_glFUNCTION )
         ; assume ebx = [opengl32base]
@@ -293,8 +268,6 @@ postData:
         push 0x8B31
         call [oglCreateShaderProgramv]
         mov [vertShader], eax
-    ;   test eax, eax
-    ;   jz error
 
     ; fragShader = oglCreateShaderProgramv( GL_FRAGMENT_SHADER, 1, &str_fragmentShader )
         loadVar str_fragmentShader
@@ -306,8 +279,6 @@ postData:
         push 0x8B30
         call [oglCreateShaderProgramv]
         mov [fragShader], eax
-    ;   test eax, eax
-    ;   jz error
 
     ; oglGenProgramPipelines( 1, &shaderProgram );
         lea eax, [shaderProgram]
@@ -335,8 +306,43 @@ postData:
         push eax
         call [oglUseProgramStages]
 
-    ; startTime = timeGetTime();
+    ; audioBufferAddress = VirtualAlloc( 0, 4 * AUDIO_NUMSAMPLES + 44, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+        push 4
+        push 0x00001000 | 0x00002000
+        push 4 * AUDIO_NUMSAMPLES + 44
+        push 0
+        mov ebx, [kernel32base]
+        mov esi, VirtualAlloc
+        call [callImport]
+        mov [audioBufferAddress], eax
+
+    ; memcpy( *audioBufferAddress, wavHeader, 44 );
+        mov ecx, 11
+        mov edi, dword [audioBufferAddress]
+        mov esi, dword [dataPtr]
+        add esi, (wavHeader - data_start)
+        audioCopyLoop:
+            dec ecx
+            mov eax, dword [esi + 4*ecx]
+            mov dword [edi + 4*ecx], eax
+            jnz audioCopyLoop
+
+    ; audioInit( *audioBufferAddress );
+        mov edi, dword [audioBufferAddress]
+        add edi, 44
+        push dword [dataPtr]
+        push edi
+        call audioInit
+
+    ; sndPlaySoundA( *audioBufferAddress, SND_ASYNC|SND_MEMORY );
+        push 1 | 4
+        push dword [audioBufferAddress]
         mov ebx, [winmmbase]
+        mov esi, sndPlaySoundA
+        call [callImport]
+
+    ; startTime = timeGetTime();
+    ;   mov ebx, [winmmbase]
         mov esi, timeGetTime
         call [callImport]
         mov dword [startTime], eax
@@ -390,3 +396,45 @@ exit:
         mov ebx, [kernel32base]
         mov esi, ExitProcess
         call [callImport]
+
+audioInit:
+        %define a_tmp1    ebp-12
+        %define a_tmp2    ebp-8
+        %define a_x       ebp-4
+        %define a_buffer  ebp+8
+        %define a_dataPtr ebp+12
+
+        push ebp
+        mov ebp, esp
+        mov edx, dword [a_buffer]
+        sub esp, 12
+        xor ecx, ecx
+    LL4audioInit:
+        movd xmm0, ecx
+        cvtdq2ps xmm0, xmm0
+        mov edi, dword [a_dataPtr]
+        add edi, (__real3d806343 - data_start)
+        mulss xmm0, dword [edi]
+        movss dword [a_x], xmm0
+        fld dword [a_x]
+        fsin
+        fstp dword [a_x]
+        movss xmm0, dword [a_x]
+        mov edi, [a_dataPtr]
+        add edi, (__real46fffe00 - data_start)
+        mulss xmm0, dword [edi]
+        movss dword [a_x], xmm0
+        fld dword [a_x]
+        fistp dword [a_tmp2]
+        mov ax, word [a_tmp2]
+        mov word [edx+ecx*4], ax
+        movss dword [a_x], xmm0
+        fld dword [a_x]
+        fistp dword [a_tmp1]
+        mov ax, word [a_tmp1]
+        mov word [edx+ecx*4+2], ax
+        inc ecx
+        cmp ecx, 220500
+        jl LL4audioInit
+        leave
+        ret

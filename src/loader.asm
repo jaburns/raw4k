@@ -4,16 +4,9 @@
 ;
 BITS 32
 
-LoadLibraryA  equ  0x01364564
-VirtualAlloc  equ  0x57F34BD3
-CreateFileA   equ  0x5023E3C4
-ReadFile      equ  0xF0B5A43F
+%include "defs.inc"
 
-%define kernel32base  ebp-16
-%define callImport    ebp-20
-
-BASE        equ  0x00400000
-FRAME_SIZE  equ  0x100
+BASE  equ  0x00400000
 
 %define RVA(obj) (obj - BASE)
 
@@ -48,7 +41,7 @@ main0:  ; 14 unused bytes
         dd RVA(main0)             ; entry point address
 
 main2:  ; 8 unused bytes
-        sub esp, FRAME_SIZE       ; set aside some space for local vars
+        sub esp, BASE_STACK_SIZE  ; set aside some space for local vars
         jmp main3
 
         dd BASE                   ; image base
@@ -56,7 +49,7 @@ main2:  ; 8 unused bytes
         dd 4                      ; file alignment
 
         ; 8 unused bytes
-main5:  push (0x00001000 | 0x00002000) ; 3rd arg to VirtualAlloc: MEM_COMMIT | MEM_RESERVE
+main5:  push 0x00001000 | 0x00002000 ; 3rd arg to VirtualAlloc: MEM_COMMIT | MEM_RESERVE
         jmp main6
         db 0
 

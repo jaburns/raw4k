@@ -2,8 +2,9 @@
 #include <stdint.h>
 
 // TODO fread
-const char DATA[] = { };
+const char DATA[] = { 0 };
 
+extern void audioInit( short *buffer );
 extern int unzip( char *outBuffer, const char *data );
 
 int main()
@@ -13,5 +14,8 @@ int main()
     FILE *fp = fopen("outc.exe", "wb");
     fwrite(buffer, 1, outSize, fp);
     fclose(fp);
+
+    audioInit( (short*)buffer );
+
     return 0;
 }
