@@ -1,6 +1,6 @@
 /tools/odb/
 /synth/.vs/
-/synth/Release/
+/synth/Release/*
 !/synth/Release/synth.asm
 /synth/*.exe
 /synth/*.vcxproj.*
