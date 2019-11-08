@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const fs = require('fs');
 
 const OPERATORS = '+-*/=(){};,<>?:';
@@ -24,7 +25,6 @@ const packSpaces = s => {
 };
 
 const pack = s => {
-    console.log(getFunctionNames(s));
     return packSpaces(oneLine(s));
 };
 

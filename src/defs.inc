@@ -17,6 +17,7 @@
 %define vertShader               ebp-128-48
 %define fragShader               ebp-128-52
 %define shaderProgram            ebp-128-56
+%define synthTEMP                ebp-128-60
 %define startTime                ebp-128-68
 %define winmmbase                ebp-128-72
 %define curTime                  ebp-128-76

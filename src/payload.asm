@@ -32,10 +32,8 @@ str_glUseProgramStages:      db "glUseProgramStages", 0
 str_glProgramUniform1i:      db "glProgramUniform1i"
 str_empty:                   db 0
 
-__real46fffe00:  dd  0x046fffe00
-__real3d806343:  dd  0x03d806343
-
 %include "shaders.inc"
+%include "synthData.inc"
 
 displaySettings:
         dd 0                ; BYTE dmDeviceName[32];
@@ -125,7 +123,7 @@ pixelFormatDescriptor:
         dd 0                ; DWORD dwVisibleMask
         dd 0                ; DWORD dwDamageMask
 
-%define AUDIO_DURATION        5
+%define AUDIO_DURATION       50
 %define AUDIO_RATE        44100
 %define AUDIO_NUMCHANNELS     2
 %define AUDIO_NUMSAMPLES  (AUDIO_DURATION * AUDIO_RATE)
@@ -327,12 +325,12 @@ start:
             mov dword [edi + 4*ecx], eax
             jnz audioCopyLoop
 
-    ; audioInit( *audioBufferAddress );
+    ; runSynth( *audioBufferAddress );
         mov edi, dword [audioBufferAddress]
         add edi, 44
-        push dword [dataPtr]
         push edi
-        call audioInit
+        movq xmm0, qword [dataPtr]
+        call runSynth
 
     ; sndPlaySoundA( *audioBufferAddress, SND_ASYNC|SND_MEMORY );
         push 1 | 4
@@ -397,44 +395,4 @@ exit:
         mov esi, ExitProcess
         call [callImport]
 
-audioInit:
-        %define a_tmp1    ebp-12
-        %define a_tmp2    ebp-8
-        %define a_x       ebp-4
-        %define a_buffer  ebp+8
-        %define a_dataPtr ebp+12
-
-        push ebp
-        mov ebp, esp
-        mov edx, dword [a_buffer]
-        sub esp, 12
-        xor ecx, ecx
-    LL4audioInit:
-        movd xmm0, ecx
-        cvtdq2ps xmm0, xmm0
-        mov edi, dword [a_dataPtr]
-        add edi, (__real3d806343 - data_start)
-        mulss xmm0, dword [edi]
-        movss dword [a_x], xmm0
-        fld dword [a_x]
-        fsin
-        fstp dword [a_x]
-        movss xmm0, dword [a_x]
-        mov edi, [a_dataPtr]
-        add edi, (__real46fffe00 - data_start)
-        mulss xmm0, dword [edi]
-        movss dword [a_x], xmm0
-        fld dword [a_x]
-        fistp dword [a_tmp2]
-        mov ax, word [a_tmp2]
-        mov word [edx+ecx*4], ax
-        movss dword [a_x], xmm0
-        fld dword [a_x]
-        fistp dword [a_tmp1]
-        mov ax, word [a_tmp1]
-        mov word [edx+ecx*4+2], ax
-        inc ecx
-        cmp ecx, 220500
-        jl LL4audioInit
-        leave
-        ret
+%include "synthCode.inc"

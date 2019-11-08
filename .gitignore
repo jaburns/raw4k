@@ -1,8 +1,10 @@
 /tools/odb/
-/tools/unzip_c/.vs/
-/tools/unzip_c/Debug/
-/tools/unzip_c/Release/
-/tools/unzip_c/*.exe
-/tools/unzip_c/*.vcxproj.*
-/bin/
+/synth/.vs/
+/synth/Release/
+!/synth/Release/synth.asm
+/synth/*.exe
+/synth/*.vcxproj.*
 /src/shaders.inc
+/src/synthCode.inc
+/src/synthData.inc
+/bin/
