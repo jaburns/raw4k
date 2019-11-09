@@ -103,7 +103,6 @@ const translateTextSeg = lines => {
         line = line.replace('ret 0', 'ret');
         line = line.replace(/ST\((.)\)/g, 'st$1');
 
-
         outLines.push(line);
     }
 
