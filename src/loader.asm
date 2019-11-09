@@ -128,7 +128,7 @@ main6:
         test ebx, ebx
         je endUnpackLoop
         add esi, ebx
-    copyFromDictLoop:
+    copyFromDictLoop: ; TODO can this use rep movsb byte [edi], byte [esi] ?
         mov al, byte [ecx]
         mov byte [edi], al
         inc edi

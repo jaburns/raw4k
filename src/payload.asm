@@ -35,94 +35,6 @@ str_empty:                   db 0
 %include "shaders.inc"
 %include "synthData.inc"
 
-displaySettings:
-        dd 0                ; BYTE dmDeviceName[32];
-        dd 0
-        dd 0
-        dd 0
-        dd 0
-        dd 0
-        dd 0
-        dd 0
-
-        dw 0                ; dmSpecVersion;
-        dw 0                ; dmDriverVersion;
-        dw 156              ; dmSize;
-        dw 0                ; dmDriverExtra;
-        dd 0x001c0000       ; dmFields;
-
-        ; UNION display only fields
-        dd 0                ; dmPosition.x
-        dd 0                ; dmPosition.y
-        dd 0                ; dmDisplayOrientation
-        dd 0                ; dmDisplayFixedOutput
-
-        dw 0                ; dmColor
-        dw 0                ; dmDuplex
-        dw 0                ; dmYResolution
-        dw 0                ; dmTTOption
-        dw 0                ; dmCollate
-        
-        dd 0                ; BYTE dmFormName[32];
-        dd 0
-        dd 0
-        dd 0
-        dd 0
-        dd 0
-        dd 0
-        dd 0
-
-        dw    0             ; dmLogPixels
-        dd   32             ; dmBitsPerPel
-        dd 1280             ; dmPelsWidth
-        dd  720             ; dmPelsHeight
-        dd    0             ; UNION dmDisplayFlags | dmNup
-        dd    0             ; dmDisplayFrequency
-
-        dd 0                ; dmICMMethod
-        dd 0                ; dmICMIntent
-        dd 0                ; dmMediaType
-        dd 0                ; dmDitherType
-        dd 0                ; dmReserved1
-        dd 0                ; dmReserved2
-
-        dd 0                ; dmPanningWidth
-        dd 0                ; dmPanningHeight
-
-pixelFormatDescriptor:
-        dw 40               ; nSize = sizeof(PIXELFORMATDESCRIPTOR)
-        dw 1                ; nVersion
-        dd (4 | 0x20 | 1),  ; dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER
-        db 0                ; iPixelType = PFD_TYPE_RGBA
-        db 32               ; cColorBits
-
-        db 0                ; cRedBits
-        db 0                ; cRedShift
-        db 0                ; cGreenBits
-        db 0                ; cGreenShift
-        db 0                ; cBlueBits
-        db 0                ; cBlueShift
-
-        db 8                ; cAlphaBits
-
-        db 0                ; cAlphaShift
-        db 0                ; cAccumBits
-        db 0                ; cAccumRedBits
-        db 0                ; cAccumGreenBits
-        db 0                ; cAccumBlueBits
-        db 0                ; cAccumAlphaBits
-
-        db 32               ; cDepthBits
-
-        db 0                ; cStencilBits
-        db 0                ; cAuxBuffers
-        db 0                ; iLayerType = PFD_MAIN_PLANE
-        db 0                ; bReserved
-
-        dd 0                ; DWORD dwLayerMask
-        dd 0                ; DWORD dwVisibleMask
-        dd 0                ; DWORD dwDamageMask
-
 %define AUDIO_DURATION       50
 %define AUDIO_RATE        44100
 %define AUDIO_NUMCHANNELS     2
@@ -170,9 +82,27 @@ start:
         call [callImport]
         mov [winmmbase], eax
 
+    ; audioBufferAddress = VirtualAlloc( 0, 4 * AUDIO_NUMSAMPLES + 44, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+        push 4
+        push 0x00001000 | 0x00002000
+        push 4 * AUDIO_NUMSAMPLES + 44
+        push 0
+        mov ebx, [kernel32base]
+        mov esi, VirtualAlloc
+        call [callImport]
+        mov [audioBufferAddress], eax
+
+    ; Populate the "audio" buffer with the non-zero display settings struct values.
+        mov word  [eax+  36], 156            ; dmSize;
+        mov dword [eax+  40], 0x001c0000     ; dmFields;
+        mov dword [eax+ 104], 32             ; dmBitsPerPel
+        mov dword [eax+ 108], 1280           ; dmPelsWidth
+        mov dword [eax+ 112], 720            ; dmPelsHeight
+
     ; ChangeDisplaySettingsA( &screenSettings, CDS_FULLSCREEN );
         push 4
-        pushVar displaySettings
+    ;   pushVar displaySettings
+        push eax
         mov ebx, [user32base]
         mov esi, ChangeDisplaySettingsA
         call [callImport]
@@ -208,17 +138,31 @@ start:
         call [callImport]
         mov [hDC], eax
 
+    ; Fill audio buffer with enough zeros and set specific values in pixel format descriptor
+        mov edi, dword [audioBufferAddress]
+        mov ecx, 40
+        xor eax, eax
+        rep stosb
+        mov edi, dword [audioBufferAddress]
+        mov word  [edi],     40              ; nSize = sizeof(PIXELFORMATDESCRIPTOR) 
+        mov word  [edi+  2],  1              ; nVersion
+        mov dword [edi+  4], (4 | 0x20 | 1)  ; dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER
+        mov byte  [edi+  9], 32              ; cColorBits
+        mov byte  [edi+ 16],  8              ; cAlphaBits
+        mov byte  [edi+ 23], 32              ; cDepthBits
+
     ; if( !SetPixelFormat( hDC, ChoosePixelFormat( hDC, &pfd ), &pfd )) return;
         mov ecx, [hDC]
         push ecx
-        pushVar pixelFormatDescriptor
+        push edi
         push ecx
         mov ebx, [gdi32base]
         mov esi, ChoosePixelFormat
         call [callImport]
         pop ecx
         mov edx, eax
-        pushVar pixelFormatDescriptor
+        mov edi, dword [audioBufferAddress]
+        push edi
         push edx
         push ecx
         mov esi, SetPixelFormat
@@ -256,8 +200,8 @@ start:
         call [callImport]
         mov [oglProgramUniform1i], eax
 
-    ; vertShader = oglCreateShaderProgramv( GL_VERTEX_SHADER, 1, &str_vertexShader )
-        loadVar str_vertexShader
+    ; vertShader = oglCreateShaderProgramv( GL_VERTEX_SHADER, 1, &_shader_vert )
+        loadVar _shader_vert
         mov dword [vertShader], eax
         mov eax, ebp
         sub eax, 128 + 48
@@ -267,8 +211,8 @@ start:
         call [oglCreateShaderProgramv]
         mov [vertShader], eax
 
-    ; fragShader = oglCreateShaderProgramv( GL_FRAGMENT_SHADER, 1, &str_fragmentShader )
-        loadVar str_fragmentShader
+    ; fragShader = oglCreateShaderProgramv( GL_FRAGMENT_SHADER, 1, &_shader_frag )
+        loadVar _shader_frag
         mov dword [fragShader], eax
         mov eax, ebp
         sub eax, 128 + 52
@@ -303,16 +247,6 @@ start:
         mov eax, [shaderProgram]
         push eax
         call [oglUseProgramStages]
-
-    ; audioBufferAddress = VirtualAlloc( 0, 4 * AUDIO_NUMSAMPLES + 44, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
-        push 4
-        push 0x00001000 | 0x00002000
-        push 4 * AUDIO_NUMSAMPLES + 44
-        push 0
-        mov ebx, [kernel32base]
-        mov esi, VirtualAlloc
-        call [callImport]
-        mov [audioBufferAddress], eax
 
     ; memcpy( *audioBufferAddress, wavHeader, 44 );
         mov ecx, 11

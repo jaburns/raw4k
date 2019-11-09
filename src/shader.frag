@@ -1,5 +1,6 @@
-layout (location=0) uniform int x_time;
-layout (location=0) out vec4 x_fragColor;
+#version 430
+layout (location=0) uniform int g_time;
+layout (location=0) out vec4 g_fragColor;
 
 mat2 rot( float theta )
 {
@@ -81,7 +82,7 @@ March march( vec3 ro, vec3 rd, float t )
 
 void main()
 {
-    float iTime = float(x_time) / 1000.;
+    float iTime = float(g_time) / 1000.;
     vec2 uv = gl_FragCoord.xy / vec2(720) - vec2(.5*1280./720., .5);
     
     vec3 ro = vec3(3.*iTime,5.,5.*iTime);
@@ -107,5 +108,5 @@ void main()
         color = mix( shadow, color, lightness );        
     }
 
-    x_fragColor = vec4(color,1);
+    g_fragColor = vec4(color,1);
 }
