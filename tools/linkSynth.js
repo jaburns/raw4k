@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 const fs = require('fs');
 
+const assumedMaxStackSize = 128;
+
 const getSegments = lines => {
     let curSeg = '';
     let constLines = [];
@@ -46,11 +48,7 @@ const translateData = lines =>
         .replace(/D(.) /g, ' D$1 0x'))
     .join('\n');
 
-const translatePTRorOFFSET = (line, kind) => {
-    const register =
-        line.match(/[ ,]al[ ,]/) || line.match(/[ ,]ah[ ,]/) || line.match(/[ ,]ax[ ,]/) || line.match(/[ ,]eax[ ,]/)
-        ? 'ebx' : 'eax';
-
+const translatePTRorOFFSET = (line, kind, register) => {
     let label, newInstruction;
 
     if (kind === 'PTR') {
@@ -61,23 +59,16 @@ const translatePTRorOFFSET = (line, kind) => {
         newInstruction = line.replace(/OFFSET [^ ,]+/, `${register}`);
     }
 
-    const touchesStack = newInstruction.indexOf('push') >= 0
-        || newInstruction.indexOf('pop') >= 0
-        || newInstruction.indexOf('esp') >= 0;
-
     return [
-        touchesStack ? `mov dword [synthTEMP], ${register}` : `push ${register}`,
         `pextrd ${register}, xmm0, 0`,
         `add ${register}, ${label} - data_start`,
         newInstruction,
-        touchesStack ? `mov ${register}, dword [synthTEMP]` : `pop ${register}`
     ];
 };
 
 const translateTextSeg = lines => {
-    let collectingVars = true;
+    let outLines = [];
     const vars = {};
-    const outLines = [];
 
     for (;;) {
         const line = lines.shift().replace(/;.*$/, '').trim();
@@ -112,19 +103,50 @@ const translateTextSeg = lines => {
         line = line.replace('ret 0', 'ret');
         line = line.replace(/ST\((.)\)/g, 'st$1');
 
-        if (line.indexOf(' PTR ') >= 0) {
-            Array.prototype.push.apply(outLines, translatePTRorOFFSET(line, 'PTR').map(x => '        '+x));
-        }
-        else if (line.indexOf(' OFFSET ') >= 0) {
-            Array.prototype.push.apply(outLines, translatePTRorOFFSET(line, 'OFFSET').map(x => '        '+x));
-        }
-        else {
-            if (line.endsWith(':')) {
-                line = '    '+line;
-            } else {
-                line = '        '+line;
-            }
 
+        outLines.push(line);
+    }
+
+    const registerRefCount = {
+        eax: 0,
+        ebx: 0,
+        ecx: 0,
+        edx: 0,
+    };
+
+    lines = outLines;
+    outLines = [];
+
+    const testRegister = (line, r) => !!(
+           line.match(new RegExp(`[^A-Za-z0-9_]${r}l[^A-Za-z0-9_]`))
+        || line.match(new RegExp(`[^A-Za-z0-9_]${r}h[^A-Za-z0-9_]`))
+        || line.match(new RegExp(`[^A-Za-z0-9_]${r}x[^A-Za-z0-9_]`))
+        || line.match(new RegExp(`[^A-Za-z0-9_]e${r}x[^A-Za-z0-9_]`)));
+
+    lines.forEach(line => {
+        if (testRegister(line, 'a')) registerRefCount.eax++;
+        if (testRegister(line, 'b')) registerRefCount.ebx++;
+        if (testRegister(line, 'c')) registerRefCount.ecx++;
+        if (testRegister(line, 'd')) registerRefCount.edx++;
+    });
+
+    const scratchRegister =
+        registerRefCount.eax === 0 ? 'eax' :
+        registerRefCount.ebx === 0 ? 'ebx' :
+        registerRefCount.ecx === 0 ? 'ecx' :
+        registerRefCount.edx === 0 ? 'edx' : '';
+
+    if (scratchRegister === '') {
+        throw new Error('No unused register found in function! This case is not yet handled, aborting.');
+    }
+
+    while (lines.length) {
+        let line = lines.shift();
+        if (line.indexOf(' PTR ') >= 0) {
+            Array.prototype.push.apply(outLines, translatePTRorOFFSET(line, 'PTR', scratchRegister));
+        } else if (line.indexOf(' OFFSET ') >= 0) {
+            Array.prototype.push.apply(outLines, translatePTRorOFFSET(line, 'OFFSET', scratchRegister));
+        } else {
             outLines.push(line);
         }
     }

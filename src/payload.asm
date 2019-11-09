@@ -171,11 +171,11 @@ start:
         mov [winmmbase], eax
 
     ; ChangeDisplaySettingsA( &screenSettings, CDS_FULLSCREEN );
-    ;   push 4
-    ;   pushVar displaySettings
-    ;   mov ebx, [user32base]
-    ;   mov esi, ChangeDisplaySettingsA
-    ;   call [callImport]
+        push 4
+        pushVar displaySettings
+        mov ebx, [user32base]
+        mov esi, ChangeDisplaySettingsA
+        call [callImport]
 
     ; ShowCursor( 0 );
         push 0
