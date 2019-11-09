@@ -17,11 +17,15 @@
 %define vertShader               ebp-128-48
 %define fragShader               ebp-128-52
 %define shaderProgram            ebp-128-56
-%define synthTEMP                ebp-128-60
 %define startTime                ebp-128-68
 %define winmmbase                ebp-128-72
 %define curTime                  ebp-128-76
 %define audioBufferAddress       ebp-128-80
+
+; This is an address way down whatever local stack frame the synth has at the time
+; TODO instead of doing the weird xmm0 register storage thing around every instruction, 
+;      do it at the beginning of every function and toss the address in to [ebp-128]
+%define synthTEMP                ebp-128
 
 ; Size of the shared loader + payload stack frame
 BASE_STACK_SIZE  equ  256

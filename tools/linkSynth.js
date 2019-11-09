@@ -61,14 +61,16 @@ const translatePTRorOFFSET = (line, kind) => {
         newInstruction = line.replace(/OFFSET [^ ,]+/, `${register}`);
     }
 
+    const touchesStack = newInstruction.indexOf('push') >= 0
+        || newInstruction.indexOf('pop') >= 0
+        || newInstruction.indexOf('esp') >= 0;
+
     return [
-        `mov dword [synthTEMP], ${register}`,
-    //  `push ${register}`,
+        touchesStack ? `mov dword [synthTEMP], ${register}` : `push ${register}`,
         `pextrd ${register}, xmm0, 0`,
         `add ${register}, ${label} - data_start`,
         newInstruction,
-        `mov ${register}, dword [synthTEMP]`
-    //  `pop ${register}`
+        touchesStack ? `mov ${register}, dword [synthTEMP]` : `pop ${register}`
     ];
 };
 
