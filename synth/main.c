@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include "synth.h"
 
+void __stdcall runSynth( short *buffer );
+
 static const int wavHeader[11] = {
     0x46464952, 
     AUDIO_NUMSAMPLES*2 + 36, 

@@ -3,6 +3,8 @@
 #define sinf sin
 #define PI 3.14159265358979f
 
+//===== Math utility functions =================================================
+
 static int f2i( float x )
 {
     int tmp;
@@ -13,7 +15,7 @@ static int f2i( float x )
     return tmp;
 }
 
-static float __declspec(noinline) asmPow( float a, float b )
+static float __declspec(noinline) pow_( float a, float b )
 {
     _asm {
         fld dword ptr[b]
@@ -34,7 +36,7 @@ static float __declspec(noinline) asmPow( float a, float b )
     }
 }
 
-static float floorj( float x )
+static float floor_( float x )
 {
     return f2i( x - 0.5f );
 }
@@ -59,33 +61,15 @@ static float mix(float a, float b, float t)
 
 static float fract(float a)
 {
-    return a - floorj(a);
+    return a - floor_(a);
 }
 
-static float jmod(float a, float b)
+static float mod(float a, float b)
 {
-    return a - b * floorj( a / b );
+    return a - b * floor_( a / b );
 }
 
-#define TRACK_LEN 16
-
-const int KICKS[] = { 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0 };
-const int HATS[]  = { 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1 };
-
-static float latestStartTime( float time, const int* track )
-{
-    time *= 4.0f;
-    
-    float result = -10.0f;
-    
-    for( int i = 0; i < TRACK_LEN; ++i ) {
-        float t = (float)i;
-        if( t >= time ) break;
-        if( track[i] > 0 ) result = t;
-    }
-    
-    return result / 4.0f;
-}
+//==============================================================================
 
 static float hash( float i )
 {
@@ -94,8 +78,8 @@ static float hash( float i )
     
 static float funcRand( float x )
 {
-    float a = hash( floorj( x ));
-    float b = hash( floorj( x + 1.0f ));
+    float a = hash( floor_( x ));
+    float b = hash( floor_( x + 1.0f ));
     return 1.0f - 2.0f * mix( a, b, smoothstep( 0.0f, 1.0f, fract( x )));
 }
 
@@ -116,12 +100,12 @@ static float kick( float time )
 {
     float attack = clamp( 400.0f*time, 0.0f, 1.0f );
     float decay = 1. - smoothstep( 0.4f, 0.5f, time );
-    return attack * decay * sinf( 220.0f * asmPow( time, 0.65f ));
+    return attack * decay * sinf( 220.0f * pow_( time, 0.65f ));
 }
 
 static float hat( float time )
 {
-     return 0.33f * funcRand( 20000.0f * asmPow( 2.72f, -10.0f*time )) * asmPow( 2.72f, -30.0f*time );
+     return 0.33f * funcRand( 20000.0f * pow_( 2.72f, -10.0f*time )) * pow_( 2.72f, -30.0f*time );
 }
 
 static float padFreq( float time )
@@ -130,17 +114,28 @@ static float padFreq( float time )
     if( time < 0.0f ) {
         detune = 0.0f;
     } else {
-        time = jmod( time, 12.0f );        
+        time = mod( time, 12.0f );        
         if( time < 2.0f ) detune = 6.3f;
         else if( time < 4.0f ) detune = 4.1f;
     }    
             
-    return 32.0f * asmPow( 2.0f, detune / 12.0f );
+    return 32.0f * pow_( 2.0f, detune / 12.0f );
+}
+
+static float latestKickStartTime( float t )
+{
+    return floor_( t * 2.0f ) / 2.0f;
+}
+
+static float latestHatStartTime( float t )
+{
+    if (t > 3.75f) return 3.75f;
+    return floor_( t + 0.5f ) - 0.5f;
 }
 
 static float getSound( float time )
 {
-    float t = jmod( time, (float)TRACK_LEN / 4. );
+    float t = mod( time, 4. );
     
     float sineRamp = clamp((time - 4.0f) / 12.0f, 0.0f, 1.0f);
     float sqrRamp  = clamp((time - 8.0f) /  8.0f, 0.0f, 1.0f);
@@ -148,8 +143,8 @@ static float getSound( float time )
     float padF = padFreq( time );
     
     float signal =
-        1.00f * kick( t - latestStartTime( t, KICKS )) +
-        0.50f * hat( t - latestStartTime( t, HATS )) +
+        1.00f * kick( t - latestKickStartTime( t )) +
+        0.50f * hat( t - latestHatStartTime( t )) +
         0.25f * sqrRamp * taylorSquareWave( 2.0f * PI * (padF + 2.0f) * time ) +
         0.50f * sineRamp * sinf( 4.0f * PI * padF * time );
     

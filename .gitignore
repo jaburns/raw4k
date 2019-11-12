@@ -7,4 +7,5 @@
 /src/shaders.inc
 /src/synthCode.inc
 /src/synthData.inc
+/src/synthHeader.inc
 /bin/

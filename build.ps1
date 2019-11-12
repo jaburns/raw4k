@@ -7,10 +7,12 @@ node tools\linkSynth.js
 
 Write-Output 'Packing GLSL shaders...'
 .\tools\shader_minifier.exe --format nasm src/shader.vert -o tmp.h
-Get-Content tmp.h | Out-File -Encoding "ASCII" .\src\shaders.inc
+Get-Content tmp.h | Out-File -Encoding 'ASCII' .\src\shaders.inc
 .\tools\shader_minifier.exe --format nasm src/shader.frag -o tmp.h
-Get-Content tmp.h | Out-File -Encoding "ASCII" -Append .\src\shaders.inc
+Get-Content tmp.h | Out-File -Encoding 'ASCII' -Append .\src\shaders.inc
 Remove-Item .\tmp.h
+
+(Get-Content .\synth\synth.h) -replace '#', '%' | Out-File -Encoding 'ASCII' .\src\synthHeader.inc
 
 Write-Output 'Assembling payload binary...'
 tools\yasm-1.3.0-win64.exe -o"bin\payload.bin" -l"bin\payload.lst" -fbin src\payload.asm
