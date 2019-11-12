@@ -1,8 +1,5 @@
 #include "synth.h"
 
-#define sinf sin
-#define PI 3.14159265358979f
-
 //===== Math utility functions =================================================
 
 static int f2i( float x )
@@ -73,7 +70,7 @@ static float mod(float a, float b)
 
 static float hash( float i )
 {
-    return fract( sinf( i * 12.9898f ) * 43758.5453f );
+    return fract( sin( i * 12.9898f ) * 43758.5453f );
 }
     
 static float funcRand( float x )
@@ -90,7 +87,7 @@ static float taylorSquareWave( float x )
     for( int i = 1; i <= 5; i += 2 )
     {
         float n = (float)i;
-        result += 4.0f / PI / n * sinf( n * x );
+        result += 4.0f / 3.14159f / n * sin( n * x );
     } 
     
     return result;
@@ -100,26 +97,12 @@ static float kick( float time )
 {
     float attack = clamp( 400.0f*time, 0.0f, 1.0f );
     float decay = 1. - smoothstep( 0.4f, 0.5f, time );
-    return attack * decay * sinf( 220.0f * pow_( time, 0.65f ));
+    return attack * decay * sin( 220.0f * pow_( time, 0.65f ));
 }
 
 static float hat( float time )
 {
      return 0.33f * funcRand( 20000.0f * pow_( 2.72f, -10.0f*time )) * pow_( 2.72f, -30.0f*time );
-}
-
-static float padFreq( float time )
-{
-    float detune = 0.0f;
-    if( time < 0.0f ) {
-        detune = 0.0f;
-    } else {
-        time = mod( time, 12.0f );        
-        if( time < 2.0f ) detune = 6.3f;
-        else if( time < 4.0f ) detune = 4.1f;
-    }    
-            
-    return 32.0f * pow_( 2.0f, detune / 12.0f );
 }
 
 static float latestKickStartTime( float t )
@@ -135,20 +118,23 @@ static float latestHatStartTime( float t )
 
 static float getSound( float time )
 {
+    const float FADE_LEN = 8.0f;
+
     float t = mod( time, 4. );
     
     float sineRamp = clamp((time - 4.0f) / 12.0f, 0.0f, 1.0f);
     float sqrRamp  = clamp((time - 8.0f) /  8.0f, 0.0f, 1.0f);
     
-    float padF = padFreq( time );
+    const float padF = 32.0f;
+    const float volume = clamp(time / FADE_LEN, 0.0f, 1.0f) * clamp(((float)AUDIO_DURATION - time) / FADE_LEN, 0.0f, 1.0f);
     
     float signal =
         1.00f * kick( t - latestKickStartTime( t )) +
         0.50f * hat( t - latestHatStartTime( t )) +
-        0.25f * sqrRamp * taylorSquareWave( 2.0f * PI * (padF + 2.0f) * time ) +
-        0.50f * sineRamp * sinf( 4.0f * PI * padF * time );
+        0.25f * taylorSquareWave( 2.0f * 3.14159f * (padF + 2.0f) * time ) +
+        0.50f * sin( 4.0f * 3.14159f * padF * time );
     
-    return clamp( signal, -1.0f, 1.0f );
+    return volume * clamp( signal, -1.0f, 1.0f );
 }
 
 void __stdcall runSynth( short *buffer )

@@ -83,6 +83,8 @@ March march( vec3 ro, vec3 rd, float t )
 void main()
 {
     float iTime = float(g_time) / 1000.;
+    float volume = clamp(iTime / 8., 0., 1.) * clamp((30. - iTime) / 8., 0., 1.);
+    iTime += .07*sin(4.*3.14159*iTime);
     vec2 uv = gl_FragCoord.xy / vec2(720) - vec2(.5*1280./720., .5);
     
     vec3 ro = vec3(3.*iTime,5.,5.*iTime);
@@ -95,17 +97,17 @@ void main()
     March m = march( ro, rd, iTime );
     
     float lightness = 0.;
-    vec3 color = .3*vec3(102, 139, 164) / 255.;
+    vec3 color = .1*vec3(102, 139, 164) / 255.;
     
     if( m.dist >= 0.0 ) {
-        float fog = exp( -.02*m.dist );
+        float fogPow = mix(1., .02, pow(volume,.25));
+        float fog = exp( -fogPow*m.dist ) * volume;
         lightness = fog * (1. - m.ao);
         
         vec3 coord01 = m.coord * .5 + .5;
-        color = mix((vec3(151, 203, 169) / 255.), (vec3(254, 255, 223) / 255.), mod(dot(coord01,vec3(1)), 2.));
+        vec3 lightColor = mix((vec3(151, 203, 169) / 255.), (vec3(254, 255, 223) / 255.), mod(dot(coord01,vec3(1)), 2.));
         
-        vec3 shadow = mix((.1*vec3(102, 139, 164) / 255.), .3*vec3(102, 139, 164) / 255., 1. - fog);
-        color = mix( shadow, color, lightness );        
+        color = mix( color, lightColor, lightness );        
     }
 
     g_fragColor = vec4(color,1);

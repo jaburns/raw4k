@@ -12,7 +12,6 @@ INCLUDELIB OLDNAMES
 PUBLIC	_runSynth@4
 PUBLIC	__real@00000000
 PUBLIC	__real@37be37c6
-PUBLIC	__real@3daaaaab
 PUBLIC	__real@3e000000
 PUBLIC	__real@3e800000
 PUBLIC	__real@3ea8f5c3
@@ -21,22 +20,18 @@ PUBLIC	__real@3f000000
 PUBLIC	__real@3f266666
 PUBLIC	__real@3f800000
 PUBLIC	__real@3fa2f983
-PUBLIC	__real@40000000
+PUBLIC	__real@3fe0000000000000
 PUBLIC	__real@402e147b
 PUBLIC	__real@40400000
 PUBLIC	__real@40700000
 PUBLIC	__real@40800000
-PUBLIC	__real@40833333
-PUBLIC	__real@40c90fdb
-PUBLIC	__real@40c9999a
 PUBLIC	__real@40e55dd180000000
-PUBLIC	__real@41000000
-PUBLIC	__real@41400000
-PUBLIC	__real@41490fdb
 PUBLIC	__real@414fd639
-PUBLIC	__real@42000000
+PUBLIC	__real@41f00000
+PUBLIC	__real@4355a0d9
 PUBLIC	__real@435c0000
 PUBLIC	__real@43c80000
+PUBLIC	__real@43c90fdb
 PUBLIC	__real@469c4000
 PUBLIC	__real@46fffe00
 PUBLIC	__real@bf800000
@@ -63,6 +58,10 @@ CONST	ENDS
 CONST	SEGMENT
 __real@469c4000 DD 0469c4000r			; 20000
 CONST	ENDS
+;	COMDAT __real@43c90fdb
+CONST	SEGMENT
+__real@43c90fdb DD 043c90fdbr			; 402.124
+CONST	ENDS
 ;	COMDAT __real@43c80000
 CONST	SEGMENT
 __real@43c80000 DD 043c80000r			; 400
@@ -71,41 +70,21 @@ CONST	ENDS
 CONST	SEGMENT
 __real@435c0000 DD 0435c0000r			; 220
 CONST	ENDS
-;	COMDAT __real@42000000
+;	COMDAT __real@4355a0d9
 CONST	SEGMENT
-__real@42000000 DD 042000000r			; 32
+__real@4355a0d9 DD 04355a0d9r			; 213.628
+CONST	ENDS
+;	COMDAT __real@41f00000
+CONST	SEGMENT
+__real@41f00000 DD 041f00000r			; 30
 CONST	ENDS
 ;	COMDAT __real@414fd639
 CONST	SEGMENT
 __real@414fd639 DD 0414fd639r			; 12.9898
 CONST	ENDS
-;	COMDAT __real@41490fdb
-CONST	SEGMENT
-__real@41490fdb DD 041490fdbr			; 12.5664
-CONST	ENDS
-;	COMDAT __real@41400000
-CONST	SEGMENT
-__real@41400000 DD 041400000r			; 12
-CONST	ENDS
-;	COMDAT __real@41000000
-CONST	SEGMENT
-__real@41000000 DD 041000000r			; 8
-CONST	ENDS
 ;	COMDAT __real@40e55dd180000000
 CONST	SEGMENT
 __real@40e55dd180000000 DQ 040e55dd180000000r	; 43758.5
-CONST	ENDS
-;	COMDAT __real@40c9999a
-CONST	SEGMENT
-__real@40c9999a DD 040c9999ar			; 6.3
-CONST	ENDS
-;	COMDAT __real@40c90fdb
-CONST	SEGMENT
-__real@40c90fdb DD 040c90fdbr			; 6.28319
-CONST	ENDS
-;	COMDAT __real@40833333
-CONST	SEGMENT
-__real@40833333 DD 040833333r			; 4.1
 CONST	ENDS
 ;	COMDAT __real@40800000
 CONST	SEGMENT
@@ -123,9 +102,9 @@ CONST	ENDS
 CONST	SEGMENT
 __real@402e147b DD 0402e147br			; 2.72
 CONST	ENDS
-;	COMDAT __real@40000000
+;	COMDAT __real@3fe0000000000000
 CONST	SEGMENT
-__real@40000000 DD 040000000r			; 2
+__real@3fe0000000000000 DQ 03fe0000000000000r	; 0.5
 CONST	ENDS
 ;	COMDAT __real@3fa2f983
 CONST	SEGMENT
@@ -159,10 +138,6 @@ CONST	ENDS
 CONST	SEGMENT
 __real@3e000000 DD 03e000000r			; 0.125
 CONST	ENDS
-;	COMDAT __real@3daaaaab
-CONST	SEGMENT
-__real@3daaaaab DD 03daaaaabr			; 0.0833333
-CONST	ENDS
 ;	COMDAT __real@37be37c6
 CONST	SEGMENT
 __real@37be37c6 DD 037be37c6r			; 2.26757e-05
@@ -173,32 +148,102 @@ __real@00000000 DD 000000000r			; 0
 CONST	ENDS
 ; Function compile flags: /Ogsp
 ; File d:\dev\raw4k\synth\synth.c
-;	COMDAT _getSound
+;	COMDAT _runSynth@4
 _TEXT	SEGMENT
-tv259 = -44						; size = 8
-_sineRamp$1$ = -36					; size = 4
-_sqrRamp$1$ = -32					; size = 4
-$T1 = -28						; size = 4
-tv290 = -24						; size = 4
-tv266 = -24						; size = 4
-_tmp$2 = -20						; size = 4
-_tmp$3 = -16						; size = 4
-_padF$1$ = -12						; size = 4
-_x$4 = -12						; size = 4
-_time$1$ = -8						; size = 4
-_i$5 = -8						; size = 4
-_x$6 = -8						; size = 4
-_x$7 = -8						; size = 4
-_tmp$8 = -8						; size = 4
-_t$1$ = -4						; size = 4
-_time$ = 8						; size = 4
-_getSound PROC						; COMDAT
+_tmp$1 = -12						; size = 4
+_tmp$2 = -8						; size = 4
+tv197 = -4						; size = 4
+_i$3 = -4						; size = 4
+_x$ = 8							; size = 4
+_x$ = 8							; size = 4
+_buffer$ = 8						; size = 4
+_runSynth@4 PROC					; COMDAT
 
-; 137  : {
+; 144  : {
 
 	push	ebp
 	mov	ebp, esp
-	sub	esp, 44					; 0000002cH
+	sub	esp, 12					; 0000000cH
+
+; 145  :     for( int i = 0; i < AUDIO_NUMSAMPLES; i++ ) 
+
+	mov	edx, DWORD PTR _buffer$[ebp]
+	xor	ecx, ecx
+	fld	DWORD PTR __real@37be37c6
+	mov	DWORD PTR _i$3[ebp], ecx
+$LN4@runSynth:
+
+; 146  :     {
+; 147  :         const float amplitude = getSound( (float)i/(float)AUDIO_RATE );
+
+	fimul	DWORD PTR _i$3[ebp]
+	push	ecx
+	fstp	DWORD PTR [esp]
+	call	_getSound
+
+; 148  :         buffer[2*i+0] = f2i(amplitude*32767.0f);
+
+	fmul	DWORD PTR __real@46fffe00
+	add	esp, 4
+	fst	DWORD PTR tv197[ebp]
+	fstp	DWORD PTR _x$[ebp]
+	fld	DWORD PTR _x$[ebp]
+	fistp	DWORD PTR _tmp$2[ebp]
+	mov	ax, WORD PTR _tmp$2[ebp]
+
+; 149  :         buffer[2*i+1] = f2i(amplitude*32767.0f);
+
+	fld	DWORD PTR tv197[ebp]
+	fstp	DWORD PTR _x$[ebp]
+	mov	WORD PTR [edx+ecx*4], ax
+	fld	DWORD PTR _x$[ebp]
+	fistp	DWORD PTR _tmp$1[ebp]
+	mov	ax, WORD PTR _tmp$1[ebp]
+	fld	DWORD PTR __real@37be37c6
+	mov	WORD PTR [edx+ecx*4+2], ax
+	inc	ecx
+	mov	DWORD PTR _i$3[ebp], ecx
+	cmp	ecx, 2646000				; 00285ff0H
+	jl	SHORT $LN4@runSynth
+
+; 145  :     for( int i = 0; i < AUDIO_NUMSAMPLES; i++ ) 
+
+	fstp	ST(0)
+
+; 150  :     }
+; 151  : }
+
+	leave
+	ret	4
+_runSynth@4 ENDP
+_TEXT	ENDS
+; Function compile flags: /Ogsp
+; File d:\dev\raw4k\synth\synth.c
+;	COMDAT _getSound
+_TEXT	SEGMENT
+tv345 = -36						; size = 8
+_volume$1$ = -28					; size = 4
+$T1 = -24						; size = 4
+tv371 = -20						; size = 4
+tv351 = -20						; size = 4
+_tmp$2 = -16						; size = 4
+_tmp$3 = -12						; size = 4
+tv299 = -8						; size = 4
+_time$1$ = -8						; size = 4
+_i$4 = -8						; size = 4
+_x$5 = -8						; size = 4
+_x$6 = -8						; size = 4
+_x$7 = -8						; size = 4
+_t$1$ = -4						; size = 4
+_tmp$8 = -4						; size = 4
+_time$ = 8						; size = 4
+_getSound PROC						; COMDAT
+
+; 123  : {
+
+	push	ebp
+	mov	ebp, esp
+	sub	esp, 36					; 00000024H
 
 ; 69   :     return a - b * floor_( a / b );
 
@@ -208,103 +253,93 @@ _getSound PROC						; COMDAT
 ; 41   :     return f2i( x - 0.5f );
 
 	fsub	DWORD PTR __real@3f000000
-	fstp	DWORD PTR _x$4[ebp]
+	fstp	DWORD PTR _x$7[ebp]
 
-; 138  :     float t = mod( time, 4. );
+; 124  :     const float FADE_LEN = 8.0f;
+; 125  : 
+; 126  :     float t = mod( time, 4. );
 
-	fld	DWORD PTR _x$4[ebp]
+	fld	DWORD PTR _x$7[ebp]
 	fistp	DWORD PTR _tmp$8[ebp]
 
 ; 41   :     return f2i( x - 0.5f );
 
 	fild	DWORD PTR _tmp$8[ebp]
 
-; 139  :     
-; 140  :     float sineRamp = clamp((time - 4.0f) / 12.0f, 0.0f, 1.0f);
+; 127  :     
+; 128  :     float sineRamp = clamp((time - 4.0f) / 12.0f, 0.0f, 1.0f);
+; 129  :     float sqrRamp  = clamp((time - 8.0f) /  8.0f, 0.0f, 1.0f);
+; 130  :     
+; 131  :     const float padF = 32.0f;
+; 132  :     const float volume = clamp(time / FADE_LEN, 0.0f, 1.0f) * clamp(((float)AUDIO_DURATION - time) / FADE_LEN, 0.0f, 1.0f);
 
 	sub	esp, 12					; 0000000cH
 
 ; 69   :     return a - b * floor_( a / b );
 
-	fld	DWORD PTR __real@40800000
-	fmul	ST(1), ST(0)
+	fmul	DWORD PTR __real@40800000
 	fld	DWORD PTR _time$[ebp]
 	fld	ST(0)
-	fsubrp	ST(3), ST(0)
-	fxch	ST(2)
+	fsubrp	ST(2), ST(0)
+	fxch	ST(1)
 	fstp	DWORD PTR _t$1$[ebp]
 
-; 139  :     
-; 140  :     float sineRamp = clamp((time - 4.0f) / 12.0f, 0.0f, 1.0f);
+; 127  :     
+; 128  :     float sineRamp = clamp((time - 4.0f) / 12.0f, 0.0f, 1.0f);
+; 129  :     float sqrRamp  = clamp((time - 8.0f) /  8.0f, 0.0f, 1.0f);
+; 130  :     
+; 131  :     const float padF = 32.0f;
+; 132  :     const float volume = clamp(time / FADE_LEN, 0.0f, 1.0f) * clamp(((float)AUDIO_DURATION - time) / FADE_LEN, 0.0f, 1.0f);
 
 	fld1
 	fstp	DWORD PTR [esp+8]
 	fldz
-	fst	QWORD PTR tv259[ebp]
+	fst	QWORD PTR tv345[ebp]
 	fstp	DWORD PTR [esp+4]
-	fsubp	ST(1), ST(0)
-	fmul	DWORD PTR __real@3daaaaab
-	fstp	DWORD PTR [esp]
-	call	_clamp
-	fstp	DWORD PTR _sineRamp$1$[ebp]
-
-; 141  :     float sqrRamp  = clamp((time - 8.0f) /  8.0f, 0.0f, 1.0f);
-
-	fld1
-	fstp	DWORD PTR [esp+8]
-	fld	QWORD PTR tv259[ebp]
-	fstp	DWORD PTR [esp+4]
-	fld	DWORD PTR _time$[ebp]
-	fsub	DWORD PTR __real@41000000
+	fsubr	DWORD PTR __real@41f00000
 	fmul	DWORD PTR __real@3e000000
 	fstp	DWORD PTR [esp]
 	call	_clamp
-	fstp	DWORD PTR _sqrRamp$1$[ebp]
-
-; 142  :     
-; 143  :     float padF = padFreq( time );
-
+	fstp	DWORD PTR tv299[ebp]
+	fld1
+	fstp	DWORD PTR [esp+8]
+	fld	QWORD PTR tv345[ebp]
+	fstp	DWORD PTR [esp+4]
 	fld	DWORD PTR _time$[ebp]
-	add	esp, 8
+	fmul	DWORD PTR __real@3e000000
 	fstp	DWORD PTR [esp]
-	call	_padFreq
-	fstp	DWORD PTR _padF$1$[ebp]
+	call	_clamp
+	fmul	DWORD PTR tv299[ebp]
+	add	esp, 12					; 0000000cH
+	fstp	DWORD PTR _volume$1$[ebp]
 
-; 127  :     return floor_( t * 2.0f ) / 2.0f;
+; 113  :     return floor_( t * 2.0f ) / 2.0f;
 
 	fld	DWORD PTR _t$1$[ebp]
-
-; 142  :     
-; 143  :     float padF = padFreq( time );
-
-	add	esp, 4
-
-; 127  :     return floor_( t * 2.0f ) / 2.0f;
-
 	fld	ST(0)
 	faddp	ST(1), ST(0)
 
 ; 41   :     return f2i( x - 0.5f );
 
 	fsub	DWORD PTR __real@3f000000
-	fstp	DWORD PTR _x$7[ebp]
+	fstp	DWORD PTR _x$6[ebp]
 
-; 144  :     
-; 145  :     float signal =
+; 133  :     
+; 134  :     float signal =
 
-	fld	DWORD PTR _x$7[ebp]
+	fld	DWORD PTR _x$6[ebp]
 	fistp	DWORD PTR _tmp$3[ebp]
 
 ; 41   :     return f2i( x - 0.5f );
 
 	fild	DWORD PTR _tmp$3[ebp]
 
-; 127  :     return floor_( t * 2.0f ) / 2.0f;
+; 113  :     return floor_( t * 2.0f ) / 2.0f;
 
 	fmul	DWORD PTR __real@3f000000
 	fstp	DWORD PTR $T1[ebp]
 
-; 132  :     if (t > 3.75f) return 3.75f;
+; 118  :     if (t > 3.75f) return 3.75f;
 
 	fld	DWORD PTR __real@40700000
 	fld	DWORD PTR _t$1$[ebp]
@@ -316,26 +351,26 @@ _getSound PROC						; COMDAT
 
 ; 41   :     return f2i( x - 0.5f );
 
-	fstp	DWORD PTR _x$6[ebp]
+	fstp	DWORD PTR _x$5[ebp]
 
-; 144  :     
-; 145  :     float signal =
+; 133  :     
+; 134  :     float signal =
 
-	fld	DWORD PTR _x$6[ebp]
+	fld	DWORD PTR _x$5[ebp]
 	fistp	DWORD PTR _tmp$2[ebp]
 
 ; 41   :     return f2i( x - 0.5f );
 
 	fild	DWORD PTR _tmp$2[ebp]
 
-; 133  :     return floor_( t + 0.5f ) - 0.5f;
+; 119  :     return floor_( t + 0.5f ) - 0.5f;
 
 	fsub	DWORD PTR __real@3f000000
 	fld	DWORD PTR _t$1$[ebp]
 $LN15@getSound:
 
-; 144  :     
-; 145  :     float signal =
+; 133  :     
+; 134  :     float signal =
 
 	fsubrp	ST(1), ST(0)
 
@@ -344,8 +379,8 @@ $LN15@getSound:
 	push	ecx
 	push	ecx
 
-; 144  :     
-; 145  :     float signal =
+; 133  :     
+; 134  :     float signal =
 
 	fst	DWORD PTR _time$1$[ebp]
 
@@ -361,7 +396,7 @@ $LN15@getSound:
 	fstp	DWORD PTR [esp]
 	call	_funcRand
 	fmul	DWORD PTR __real@3ea8f5c3
-	fstp	DWORD PTR tv290[ebp]
+	fstp	DWORD PTR tv371[ebp]
 	fld	DWORD PTR _time$1$[ebp]
 	fmul	DWORD PTR __real@c1f00000
 	fstp	DWORD PTR [esp]
@@ -369,10 +404,10 @@ $LN15@getSound:
 	push	ecx
 	fstp	DWORD PTR [esp]
 	call	_pow_
-	fmul	DWORD PTR tv290[ebp]
+	fmul	DWORD PTR tv371[ebp]
 
-; 144  :     
-; 145  :     float signal =
+; 133  :     
+; 134  :     float signal =
 
 	xor	eax, eax
 
@@ -380,31 +415,29 @@ $LN15@getSound:
 
 	add	esp, 8
 
-; 144  :     
-; 145  :     float signal =
+; 133  :     
+; 134  :     float signal =
 
 	inc	eax
-	mov	DWORD PTR _i$5[ebp], eax
+	mov	DWORD PTR _i$4[ebp], eax
 
 ; 108  :      return 0.33f * funcRand( 20000.0f * pow_( 2.72f, -10.0f*time )) * pow_( 2.72f, -30.0f*time );
 
-	fstp	DWORD PTR tv266[ebp]
-	fld	DWORD PTR _padF$1$[ebp]
-	fadd	DWORD PTR __real@40000000
-	fmul	DWORD PTR __real@40c90fdb
+	fstp	DWORD PTR tv351[ebp]
 
-; 144  :     
-; 145  :     float signal =
+; 133  :     
+; 134  :     float signal =
 
-	fmul	DWORD PTR _time$[ebp]
+	fld	DWORD PTR _time$[ebp]
+	fmul	DWORD PTR __real@4355a0d9
 	fld	DWORD PTR __real@3fa2f983
 $LN27@getSound:
 
 ; 92   :         float n = (float)i;
 
-	fild	DWORD PTR _i$5[ebp]
+	fild	DWORD PTR _i$4[ebp]
 	add	eax, 2
-	mov	DWORD PTR _i$5[ebp], eax
+	mov	DWORD PTR _i$4[ebp], eax
 
 ; 93   :         result += 4.0f / PI / n * sinf( n * x );
 
@@ -414,8 +447,8 @@ $LN27@getSound:
 	fld	ST(2)
 	fdivrp	ST(2), ST(0)
 	fmulp	ST(1), ST(0)
-	fadd	QWORD PTR tv259[ebp]
-	fstp	QWORD PTR tv259[ebp]
+	fadd	QWORD PTR tv345[ebp]
+	fstp	QWORD PTR tv345[ebp]
 	cmp	eax, 5
 	jle	SHORT $LN27@getSound
 
@@ -443,12 +476,12 @@ $LN27@getSound:
 
 	fstp	ST(1)
 
-; 146  :         1.00f * kick( t - latestKickStartTime( t )) +
-; 147  :         0.50f * hat( t - latestHatStartTime( t )) +
-; 148  :         0.25f * sqrRamp * taylorSquareWave( 2.0f * PI * (padF + 2.0f) * time ) +
-; 149  :         0.50f * sineRamp * sinf( 4.0f * PI * padF * time );
-; 150  :     
-; 151  :     return clamp( signal, -1.0f, 1.0f );
+; 135  :         1.00f * kick( t - latestKickStartTime( t )) +
+; 136  :         0.50f * hat( t - latestHatStartTime( t )) +
+; 137  :         0.25f * taylorSquareWave( 2.0f * PI * (padF + 2.0f) * time ) +
+; 138  :         0.50f * sinf( 4.0f * PI * padF * time );
+; 139  :     
+; 140  :     return volume * clamp( signal, -1.0f, 1.0f );
 
 	sub	esp, 12					; 0000000cH
 
@@ -456,12 +489,12 @@ $LN27@getSound:
 
 	fstp	ST(0)
 
-; 146  :         1.00f * kick( t - latestKickStartTime( t )) +
-; 147  :         0.50f * hat( t - latestHatStartTime( t )) +
-; 148  :         0.25f * sqrRamp * taylorSquareWave( 2.0f * PI * (padF + 2.0f) * time ) +
-; 149  :         0.50f * sineRamp * sinf( 4.0f * PI * padF * time );
-; 150  :     
-; 151  :     return clamp( signal, -1.0f, 1.0f );
+; 135  :         1.00f * kick( t - latestKickStartTime( t )) +
+; 136  :         0.50f * hat( t - latestHatStartTime( t )) +
+; 137  :         0.25f * taylorSquareWave( 2.0f * PI * (padF + 2.0f) * time ) +
+; 138  :         0.50f * sinf( 4.0f * PI * padF * time );
+; 139  :     
+; 140  :     return volume * clamp( signal, -1.0f, 1.0f );
 
 	fld1
 	fstp	DWORD PTR [esp+8]
@@ -472,26 +505,22 @@ $LN27@getSound:
 	fstp	DWORD PTR [esp]
 	call	_kick
 	fld	DWORD PTR __real@3f000000
-	fld	DWORD PTR tv266[ebp]
-	fmul	ST(0), ST(1)
-	faddp	ST(2), ST(0)
-	fld	DWORD PTR _sqrRamp$1$[ebp]
+	fmul	DWORD PTR tv351[ebp]
+	faddp	ST(1), ST(0)
+	fld	QWORD PTR tv345[ebp]
 	fmul	DWORD PTR __real@3e800000
-	fmul	QWORD PTR tv259[ebp]
-	faddp	ST(2), ST(0)
-	fld	DWORD PTR _padF$1$[ebp]
-	fmul	DWORD PTR __real@41490fdb
-	fmul	DWORD PTR _time$[ebp]
+	faddp	ST(1), ST(0)
+	fld	DWORD PTR _time$[ebp]
+	fmul	DWORD PTR __real@43c90fdb
 	fsin
-	fld	DWORD PTR _sineRamp$1$[ebp]
-	fmulp	ST(2), ST(0)
-	fmulp	ST(1), ST(0)
+	fmul	QWORD PTR __real@3fe0000000000000
 	faddp	ST(1), ST(0)
 	fstp	DWORD PTR [esp]
 	call	_clamp
+	fmul	DWORD PTR _volume$1$[ebp]
 	add	esp, 12					; 0000000cH
 
-; 152  : }
+; 141  : }
 
 	leave
 	ret	0
@@ -506,13 +535,13 @@ _x$ = 8							; size = 4
 _t$ = 8							; size = 4
 _latestHatStartTime PROC				; COMDAT
 
-; 131  : {
+; 117  : {
 
 	push	ebp
 	mov	ebp, esp
 	push	ecx
 
-; 132  :     if (t > 3.75f) return 3.75f;
+; 118  :     if (t > 3.75f) return 3.75f;
 
 	fld	DWORD PTR __real@40700000
 	fld	DWORD PTR _t$[ebp]
@@ -522,13 +551,13 @@ _latestHatStartTime PROC				; COMDAT
 	jne	SHORT $LN9@latestHatS
 	fstp	ST(0)
 
-; 134  : }
+; 120  : }
 
 	leave
 	ret	0
 $LN9@latestHatS:
 
-; 132  :     if (t > 3.75f) return 3.75f;
+; 118  :     if (t > 3.75f) return 3.75f;
 
 	fstp	ST(1)
 
@@ -536,7 +565,7 @@ $LN9@latestHatS:
 
 	fstp	DWORD PTR _x$[ebp]
 
-; 133  :     return floor_( t + 0.5f ) - 0.5f;
+; 119  :     return floor_( t + 0.5f ) - 0.5f;
 
 	fld	DWORD PTR _x$[ebp]
 	fistp	DWORD PTR _tmp$1[ebp]
@@ -545,11 +574,11 @@ $LN9@latestHatS:
 
 	fild	DWORD PTR _tmp$1[ebp]
 
-; 133  :     return floor_( t + 0.5f ) - 0.5f;
+; 119  :     return floor_( t + 0.5f ) - 0.5f;
 
 	fsub	DWORD PTR __real@3f000000
 
-; 134  : }
+; 120  : }
 
 	leave
 	ret	0
@@ -564,13 +593,13 @@ _x$ = 8							; size = 4
 _t$ = 8							; size = 4
 _latestKickStartTime PROC				; COMDAT
 
-; 126  : {
+; 112  : {
 
 	push	ebp
 	mov	ebp, esp
 	push	ecx
 
-; 127  :     return floor_( t * 2.0f ) / 2.0f;
+; 113  :     return floor_( t * 2.0f ) / 2.0f;
 
 	fld	DWORD PTR _t$[ebp]
 	fadd	ST(0), ST(0)
@@ -580,7 +609,7 @@ _latestKickStartTime PROC				; COMDAT
 	fsub	DWORD PTR __real@3f000000
 	fstp	DWORD PTR _x$[ebp]
 
-; 127  :     return floor_( t * 2.0f ) / 2.0f;
+; 113  :     return floor_( t * 2.0f ) / 2.0f;
 
 	fld	DWORD PTR _x$[ebp]
 	fistp	DWORD PTR _tmp$1[ebp]
@@ -589,123 +618,15 @@ _latestKickStartTime PROC				; COMDAT
 
 	fild	DWORD PTR _tmp$1[ebp]
 
-; 127  :     return floor_( t * 2.0f ) / 2.0f;
+; 113  :     return floor_( t * 2.0f ) / 2.0f;
 
 	fmul	DWORD PTR __real@3f000000
 
-; 128  : }
+; 114  : }
 
 	leave
 	ret	0
 _latestKickStartTime ENDP
-_TEXT	ENDS
-; Function compile flags: /Ogsp
-; File d:\dev\raw4k\synth\synth.c
-;	COMDAT _padFreq
-_TEXT	SEGMENT
-_tmp$1 = -8						; size = 4
-_x$2 = -4						; size = 4
-_time$ = 8						; size = 4
-_padFreq PROC						; COMDAT
-
-; 112  : {
-
-	push	ebp
-	mov	ebp, esp
-	push	ecx
-	push	ecx
-
-; 113  :     float detune = 0.0f;
-
-	fldz
-
-; 114  :     if( time < 0.0f ) {
-
-	fld	DWORD PTR _time$[ebp]
-	fcom	ST(1)
-	fnstsw	ax
-	fld	DWORD PTR __real@3daaaaab
-	test	ah, 5
-	jp	SHORT $LN16@padFreq
-	fstp	ST(1)
-	fstp	ST(0)
-
-; 115  :         detune = 0.0f;
-; 116  :     } else {
-
-	jmp	SHORT $LN6@padFreq
-$LN16@padFreq:
-
-; 114  :     if( time < 0.0f ) {
-
-	fstp	ST(2)
-
-; 69   :     return a - b * floor_( a / b );
-
-	fmulp	ST(1), ST(0)
-
-; 41   :     return f2i( x - 0.5f );
-
-	fsub	DWORD PTR __real@3f000000
-	fstp	DWORD PTR _x$2[ebp]
-
-; 117  :         time = mod( time, 12.0f );        
-
-	fld	DWORD PTR _x$2[ebp]
-	fistp	DWORD PTR _tmp$1[ebp]
-
-; 41   :     return f2i( x - 0.5f );
-
-	fild	DWORD PTR _tmp$1[ebp]
-
-; 69   :     return a - b * floor_( a / b );
-
-	fmul	DWORD PTR __real@41400000
-	fsubr	DWORD PTR _time$[ebp]
-
-; 118  :         if( time < 2.0f ) detune = 6.3f;
-
-	fld	DWORD PTR __real@40000000
-	fcomp	ST(1)
-	fnstsw	ax
-	test	ah, 65					; 00000041H
-	jne	SHORT $LN4@padFreq
-	fstp	ST(0)
-	fld	DWORD PTR __real@40c9999a
-	jmp	SHORT $LN6@padFreq
-$LN4@padFreq:
-
-; 119  :         else if( time < 4.0f ) detune = 4.1f;
-
-	fcomp	DWORD PTR __real@40800000
-	fnstsw	ax
-	test	ah, 5
-	jp	SHORT $LN14@padFreq
-	fld	DWORD PTR __real@40833333
-	jmp	SHORT $LN6@padFreq
-$LN14@padFreq:
-	fldz
-$LN6@padFreq:
-
-; 120  :     }    
-; 121  :             
-; 122  :     return 32.0f * pow_( 2.0f, detune / 12.0f );
-
-	fmul	DWORD PTR __real@3daaaaab
-	push	ecx
-	push	ecx
-	fstp	DWORD PTR [esp+4]
-	fld	DWORD PTR __real@40000000
-	fstp	DWORD PTR [esp]
-	call	_pow_
-	fmul	DWORD PTR __real@42000000
-	add	esp, 8
-
-; 123  : }
-
-	leave
-	ret	0
-_padFreq ENDP
 _TEXT	ENDS
 ; Function compile flags: /Ogsp
 ; File d:\dev\raw4k\synth\synth.c
@@ -1422,76 +1343,5 @@ _f2i	PROC						; COMDAT
 	leave
 	ret	0
 _f2i	ENDP
-_TEXT	ENDS
-; Function compile flags: /Ogsp
-; File d:\dev\raw4k\synth\synth.c
-;	COMDAT _runSynth@4
-_TEXT	SEGMENT
-_tmp$1 = -12						; size = 4
-_tmp$2 = -8						; size = 4
-tv197 = -4						; size = 4
-_i$3 = -4						; size = 4
-_x$ = 8							; size = 4
-_x$ = 8							; size = 4
-_buffer$ = 8						; size = 4
-_runSynth@4 PROC					; COMDAT
-
-; 155  : {
-
-	push	ebp
-	mov	ebp, esp
-	sub	esp, 12					; 0000000cH
-
-; 156  :     for( int i = 0; i < AUDIO_NUMSAMPLES; i++ ) 
-
-	mov	edx, DWORD PTR _buffer$[ebp]
-	xor	ecx, ecx
-	fld	DWORD PTR __real@37be37c6
-	mov	DWORD PTR _i$3[ebp], ecx
-$LN4@runSynth:
-
-; 157  :     {
-; 158  :         const float amplitude = getSound( (float)i/(float)AUDIO_RATE );
-
-	fimul	DWORD PTR _i$3[ebp]
-	push	ecx
-	fstp	DWORD PTR [esp]
-	call	_getSound
-
-; 159  :         buffer[2*i+0] = f2i(amplitude*32767.0f);
-
-	fmul	DWORD PTR __real@46fffe00
-	add	esp, 4
-	fst	DWORD PTR tv197[ebp]
-	fstp	DWORD PTR _x$[ebp]
-	fld	DWORD PTR _x$[ebp]
-	fistp	DWORD PTR _tmp$2[ebp]
-	mov	ax, WORD PTR _tmp$2[ebp]
-
-; 160  :         buffer[2*i+1] = f2i(amplitude*32767.0f);
-
-	fld	DWORD PTR tv197[ebp]
-	fstp	DWORD PTR _x$[ebp]
-	mov	WORD PTR [edx+ecx*4], ax
-	fld	DWORD PTR _x$[ebp]
-	fistp	DWORD PTR _tmp$1[ebp]
-	mov	ax, WORD PTR _tmp$1[ebp]
-	fld	DWORD PTR __real@37be37c6
-	mov	WORD PTR [edx+ecx*4+2], ax
-	inc	ecx
-	mov	DWORD PTR _i$3[ebp], ecx
-	cmp	ecx, 4410000				; 00434a90H
-	jl	SHORT $LN4@runSynth
-
-; 156  :     for( int i = 0; i < AUDIO_NUMSAMPLES; i++ ) 
-
-	fstp	ST(0)
-
-; 161  :     }
-; 162  : }
-
-	leave
-	ret	4
-_runSynth@4 ENDP
 _TEXT	ENDS
 END

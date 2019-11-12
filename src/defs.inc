@@ -50,8 +50,7 @@ CreateFileA             equ  0x5023E3C4
 ReadFile                equ  0xF0B5A43F
 sndPlaySoundA           equ  0x58DF7954
 
-
 ; Intro configuration
 XRES         equ    1280
 YRES         equ     720
-DEMO_LENGTH  equ  100000  ; millis
+DEMO_LENGTH  equ   30000  ; millis
