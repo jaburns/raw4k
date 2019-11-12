@@ -68,13 +68,15 @@ const translatePTRorOFFSET = (line, kind, register) => {
 
 const translateTextSeg = lines => {
     let outLines = [];
+    let calls = [];
+    let procName = '';
     const vars = {};
 
     for (;;) {
         const line = lines.shift().replace(/;.*$/, '').trim();
 
         if (line.indexOf(' PROC') >= 0) {
-            let procName = line.substr(0, line.indexOf(' PROC'));
+            procName = line.substr(0, line.indexOf(' PROC'));
             if (procName === '_runSynth@4') procName = 'runSynth';
             outLines.push(procName + ':');
             break;
@@ -95,6 +97,10 @@ const translateTextSeg = lines => {
         const match = line.match(varExpr);
         if (match) {
             line = line.replace(varExpr, `[ebp${vars[match[1]]}]`);
+        }
+
+        if (line.indexOf('call ') >= 0) {
+            calls.push(line.replace(/.*call /, '').trim());
         }
 
         line = line.replace('PTR [', '[');
@@ -150,11 +156,20 @@ const translateTextSeg = lines => {
         }
     }
 
-    return outLines.join('\n');
+    return { procName, body: outLines.join('\n'), calls };
 };
 
-const translateCode = segs =>
-    segs.map(translateTextSeg).join('\n\n\n');
+const translateCode = segs => {
+    const newSegs = segs.map(translateTextSeg);
+
+    const usedProcs = newSegs.map(x => x.calls).flat();
+    usedProcs.push('runSynth');
+
+    return newSegs
+        .filter(x => usedProcs.indexOf(x.procName) >= 0)
+        .map(x => x.body)
+        .join('\n');
+};
 
 const lines = fs.readFileSync('./synth/Release/synth.asm', 'utf8')
     .split('\n')
