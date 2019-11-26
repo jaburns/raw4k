@@ -5,11 +5,6 @@ BITS 32
 
 %include "defs.inc"
 
-%macro loadVar 1
-        mov eax, [dataPtr]
-        add eax, (%1 - data_start)
-%endmacro
-
 %macro pushVar 1
         mov eax, [dataPtr]
         add eax, (%1 - data_start)
@@ -95,7 +90,6 @@ start:
 
     ; ChangeDisplaySettingsA( &screenSettings, CDS_FULLSCREEN );
         push 4
-    ;   pushVar displaySettings
         push eax
         mov ebx, [user32base]
         mov esi, ChangeDisplaySettingsA
@@ -103,7 +97,7 @@ start:
 
     ; ShowCursor( 0 );
         push 0
-        mov ebx, [user32base]
+    ;   mov ebx, [user32base]
         mov esi, ShowCursor
         call [callImport]
 
@@ -120,14 +114,14 @@ start:
         push 0
         push 0xC018
         push 0
-        mov ebx, [user32base]
+    ;   mov ebx, [user32base]
         mov esi, CreateWindowExA
         call [callImport]
         mov [hWnd], eax
 
     ; HDC hDC = GetDC( hWnd );
         push eax
-        mov ebx, [user32base]
+    ;   mov ebx, [user32base]
         mov esi, GetDC
         call [callImport]
         mov [hDC], eax
@@ -176,7 +170,7 @@ start:
         call [callImport]
 
     ; oglFUNCTION = wglGetProcAddress( str_glFUNCTION )
-        ; assume ebx = [opengl32base]
+        mov ebx, [opengl32base]
         mov esi, wglGetProcAddress
         pushVar str_glCreateShaderProgramv
         call [callImport]
@@ -195,10 +189,11 @@ start:
         mov [oglProgramUniform1i], eax
 
     ; vertShader = oglCreateShaderProgramv( GL_VERTEX_SHADER, 1, &_shader_vert )
-        loadVar _shader_vert
+        mov eax, [dataPtr]
+        add eax, (_shader_vert - data_start)
         mov dword [vertShader], eax
         mov eax, ebp
-        sub eax, 128 + 48
+        sub eax, 128+48
         push eax
         push 1
         push 0x8B31
@@ -206,10 +201,11 @@ start:
         mov [vertShader], eax
 
     ; fragShader = oglCreateShaderProgramv( GL_FRAGMENT_SHADER, 1, &_shader_frag )
-        loadVar _shader_frag
+        mov eax, [dataPtr]
+        add eax, (_shader_frag - data_start)
         mov dword [fragShader], eax
         mov eax, ebp
-        sub eax, 128 + 52
+        sub eax, 128+52
         push eax
         push 1
         push 0x8B30
@@ -303,7 +299,7 @@ drawLoop:
         ; wglSwapLayerBuffers( hDC, WGL_SWAP_MAIN_PLANE );
             push 1
             push dword [hDC]
-            mov ebx, [opengl32base]
+        ;   mov ebx, [opengl32base]
             mov esi, wglSwapLayerBuffers
             call [callImport]
 
